@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>TikTok Downloader</title>
+<title>Captain TikTok Downloader</title>
 
 <style>
 
 body{
 font-family:Arial;
-background:#111;
+background:#0f0f0f;
 color:white;
 display:flex;
 justify-content:center;
@@ -46,6 +46,16 @@ color:white;
 cursor:pointer;
 }
 
+video{
+width:100%;
+margin-top:20px;
+border-radius:10px;
+}
+
+.download{
+background:#00c853;
+}
+
 </style>
 
 </head>
@@ -54,23 +64,40 @@ cursor:pointer;
 
 <div class="box">
 
-<h2>TikTok Downloader</h2>
+<h2>Captain TikTok Downloader</h2>
 
-<input id="url" placeholder="TikTok linki">
+<input id="url" placeholder="TikTok linki yapıştır">
 
-<button onclick="indir()">Video indir</button>
+<button onclick="indir()">Videoyu Getir</button>
+
+<div id="sonuc"></div>
 
 </div>
 
 <script>
 
-function indir(){
+async function indir(){
 
 let link=document.getElementById("url").value
 
-window.open(
-"https://tikwm.com/api/?url="+encodeURIComponent(link)
-)
+let api="https://tikwm.com/api/?url="+encodeURIComponent(link)
+
+let res=await fetch(api)
+let data=await res.json()
+
+let video=data.data.hdplay || data.data.play
+
+document.getElementById("sonuc").innerHTML=
+
+`
+
+<video controls src="${video}"></video>
+
+<a href="${video}" download="captain-tiktok.mp4">
+<button class="download">MP4 Filigransız İndir</button>
+</a>
+
+`
 
 }
 
