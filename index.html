@@ -16,7 +16,6 @@
             font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
         }
 
-        /* Captain Temalı Özel Tasarım */
         .captain-card { 
             background: rgba(255, 255, 255, 0.03); 
             backdrop-filter: blur(20px); 
@@ -29,10 +28,12 @@
             color: #001220;
         }
 
-        /* iOS'ta butonlara basıldığında oluşan gri gölgeyi kaldırır */
         * { -webkit-tap-highlight-color: transparent; }
-        
         input::placeholder { color: rgba(255, 255, 255, 0.3); }
+
+        /* Basit bir yüklenme efekti */
+        .loading-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-6">
@@ -40,15 +41,15 @@
     <div class="captain-card p-8 rounded-[3rem] w-full max-w-md text-center">
         <div class="mb-6">
             <div class="text-4xl mb-2">⚓</div>
-            <h1 class="text-3xl font-black mb-1 tracking-tighter italic uppercase leading-none">CAPTAIN<br><span class="text-[#FFD700]">DOWNLOADER</span></h1>
-            <p class="text-zinc-500 text-[10px] mb-4 uppercase tracking-[0.2em] font-bold">iOS Optimized Saver</p>
+            <h1 class="text-3xl font-black mb-1 tracking-tighter italic uppercase leading-none text-white">CAPTAIN<br><span class="text-[#FFD700]">DOWNLOADER</span></h1>
+            <p id="statusTxt" class="text-zinc-500 text-[10px] mb-4 uppercase tracking-[0.2em] font-bold">Turbo Mode Active</p>
         </div>
         
-        <input type="text" id="linkInput" placeholder="Linke basılı tutup yapıştır..." 
+        <input type="text" id="linkInput" placeholder="TikTok Linkini Dümenle..." 
             class="w-full p-5 rounded-2xl bg-black/40 border border-white/5 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FFD700] text-white text-center text-base transition-all">
         
         <button onclick="indir()" id="islemBtn" class="w-full captain-btn p-5 rounded-2xl font-black shadow-lg active:scale-95 transition-all uppercase tracking-tight">
-            VİDEOYU HAZIRLA
+            VİDEOYU YAKALA
         </button>
 
         <div id="sonuc" class="hidden mt-8 p-6 border border-yellow-600/20 rounded-3xl bg-black/60">
@@ -60,8 +61,8 @@
             </a>
             
             <div class="mt-4 p-3 bg-zinc-800/30 rounded-lg border border-white/5 text-left">
-                <p class="text-zinc-400 text-[11px] leading-relaxed">
-                    <b>Kaptan'ın Notu:</b> Butona bastığında video açılırsa, sağ alttaki <b>paylaş (ok)</b> simgesine basıp <b>"Dosyalara Kaydet"</b> dersen galeriye iner.
+                <p class="text-zinc-400 text-[11px] leading-relaxed italic text-center">
+                    <b>iPhone:</b> Butona basılı tutup "Bağlantılı Dosyayı İndir" diyebilir veya video açılınca Paylaş > Kaydet yapabilirsin.
                 </p>
             </div>
         </div>
@@ -70,43 +71,52 @@
     </div>
 
     <script>
-        // Senin Gönderdiğin Orijinal Fonksiyon (Hiç Dokunulmadı)
         async function indir() {
             const input = document.getElementById('linkInput').value.trim();
             const btn = document.getElementById('islemBtn');
+            const statusTxt = document.getElementById('statusTxt');
             const sonucDiv = document.getElementById('sonuc');
             const hataP = document.getElementById('hata');
             const downloadBtn = document.getElementById('downloadLink');
 
-            if (!input) return alert("Link gerekli!");
+            if (!input) return alert("Kaptan, önce bir link yapıştırmalısın!");
 
-            btn.innerText = "İŞLENİYOR...";
+            // Görsel hazırlık
+            btn.innerText = "YOL ALINIYOR...";
             btn.disabled = true;
+            statusTxt.innerText = "AĞLAR ATILIYOR...";
+            statusTxt.classList.add('loading-pulse', 'text-[#FFD700]');
             sonucDiv.classList.add('hidden');
             hataP.classList.add('hidden');
 
             try {
-                const proxy = "https://corsproxy.io/?"; 
+                // HIZLANDIRILMIŞ PROXY SİSTEMİ
+                // corsproxy.io yavaşladığı için allorigins'in raw özelliğini kullanıyoruz
+                const proxy = "https://api.allorigins.win/raw?url="; 
                 const targetApi = `https://www.tikwm.com/api/?url=${encodeURIComponent(input)}`;
                 
-                const response = await fetch(proxy + targetApi);
+                const response = await fetch(proxy + encodeURIComponent(targetApi));
                 const resData = await response.json();
                 
                 if (resData.code === 0 && resData.data) {
                     const videoUrl = resData.data.hdplay || resData.data.play;
                     downloadBtn.href = videoUrl;
                     sonucDiv.classList.remove('hidden');
+                    statusTxt.innerText = "GANİMET GÜVERTEDE!";
                 } else {
-                    throw new Error("Video bulunamadı.");
+                    throw new Error(resData.msg || "Video bulunamadı.");
                 }
             } catch (err) {
-                hataP.innerText = "HATA: " + err.message;
+                hataP.innerText = "FIRTINA ÇIKTI: Sunucu meşgul, az sonra tekrar dene.";
                 hataP.classList.remove('hidden');
+                statusTxt.innerText = "HATA OLUŞTU";
             } finally {
-                btn.innerText = "VİDEOYU HAZIRLA";
+                btn.innerText = "VİDEOYU YAKALA";
                 btn.disabled = false;
+                statusTxt.classList.remove('loading-pulse');
             }
         }
     </script>
 </body>
 </html>
+
