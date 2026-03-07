@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>TikTok Downloader</title>
+
+<link rel="manifest" href="manifest.json">
+
+<style>
+
+body{
+background:#0f0f0f;
+color:white;
+font-family:Arial;
+text-align:center;
+padding:20px;
+}
+
+input{
+width:80%;
+padding:12px;
+border-radius:10px;
+border:none;
+}
+
+button{
+padding:12px 25px;
+margin-top:15px;
+border:none;
+border-radius:10px;
+background:#ff0050;
+color:white;
+font-size:16px;
+cursor:pointer;
+}
+
+.card{
+background:#1a1a1a;
+padding:20px;
+margin-top:25px;
+border-radius:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>TikTok Downloader</h1>
+
+<input id="link" placeholder="TikTok video linkini yapıştır">
+
+<br>
+
+<button onclick="indir()">Videoyu Getir</button>
+
+<div id="sonuc"></div>
+
+<script>
+
+function indir(){
+
+let link=document.getElementById("link").value
+
+fetch("https://tikwm.com/api/?url="+link)
+
+.then(res=>res.json())
+
+.then(data=>{
+
+let hd=data.data.hdplay
+let sd=data.data.play
+
+document.getElementById("sonuc").innerHTML=`
+
+<div class="card">
+
+<h3>Video Önizleme</h3>
+
+<video src="${sd}" width="300" controls></video>
+
+<br><br>
+
+<a href="${hd}" download>
+<button>HD indir (Filigransız)</button>
+</a>
+
+<br>
+
+<a href="${sd}" download>
+<button>SD indir</button>
+</a>
+
+</div>
+
+`
+
+})
+
+}
+
+if("serviceWorker" in navigator){
+navigator.serviceWorker.register("sw.js")
+}
+
+</script>
+
+</body>
+</html>
