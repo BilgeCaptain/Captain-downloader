@@ -3,45 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Reels Saver</title>
+    <title>Captain Video Downloader</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, system-ui, sans-serif; }
-        .reels-btn { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .loader { border: 2px solid #fff; border-top: 2px solid transparent; border-radius: 50%; width: 16px; height: 16px; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap');
+        body { 
+            background: #001220; 
+            color: #fff; 
+            font-family: 'Poppins', sans-serif; 
+        }
+        /* Kaptan Temalı Altın ve Lacivert Geçişi */
+        .captain-gradient { background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%); }
+        .captain-bg { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 215, 0, 0.2); }
+        .loader { border: 2px solid #fff; border-top: 2px solid #FFD700; border-radius: 50%; width: 16px; height: 16px; animation: spin 0.8s linear infinite; display: inline-block; margin-right: 8px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        * { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-6">
 
-    <div class="glass p-8 rounded-[2.5rem] w-full max-w-sm text-center shadow-2xl">
-        <h1 class="text-3xl font-black mb-2 italic tracking-tighter">REELS<span class="text-[#FE2C55]">PRO</span></h1>
-        <p class="text-zinc-500 text-[10px] mb-8 uppercase tracking-widest font-bold">Sayfanda Paylaşmaya Hazır</p>
+    <div class="captain-bg p-8 rounded-[3rem] w-full max-w-sm text-center shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <div class="mb-6">
+            <div class="text-4xl mb-2">⚓</div>
+            <h1 class="text-2xl font-black tracking-tight leading-tight">CAPTAIN<br><span class="text-[#FFD700]">DOWNLOADER</span></h1>
+        </div>
+
+        <input type="text" id="linkInput" placeholder="TikTok Linkini Dümenle..." 
+            class="w-full p-4 rounded-2xl bg-black/40 border border-yellow-600/30 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FFD700] text-white text-center text-sm transition-all placeholder:text-zinc-600">
         
-        <input type="text" id="linkInput" placeholder="TikTok linkini yapıştır..." 
-            class="w-full p-4 rounded-xl bg-zinc-900 border border-white/10 mb-4 focus:outline-none focus:ring-1 focus:ring-[#25F4EE] text-white text-center">
-        
-        <button onclick="indir()" id="islemBtn" class="w-full bg-white text-black p-4 rounded-xl font-black transition-all active:scale-95 shadow-lg">
+        <button onclick="indir()" id="islemBtn" class="w-full captain-gradient p-5 rounded-2xl font-black text-[#001220] shadow-lg active:scale-95 transition-all uppercase tracking-tighter">
             VİDEOYU YAKALA
         </button>
 
-        <div id="sonuc" class="hidden mt-6 space-y-3">
-            <div class="text-green-400 text-xs font-bold mb-2 uppercase animate-pulse">Video Hazır! ✨</div>
+        <div id="sonuc" class="hidden mt-8 animate-in slide-in-from-bottom duration-500">
+            <div class="flex items-center justify-center gap-2 text-[#FFD700] text-[10px] font-bold uppercase mb-4 tracking-[0.2em]">
+                <span class="h-[1px] w-8 bg-yellow-600/50"></span>
+                Ganimet Hazır
+                <span class="h-[1px] w-8 bg-yellow-600/50"></span>
+            </div>
             
             <button onclick="reelsPaylas()" id="shareBtn" 
-                class="reels-btn w-full p-5 rounded-2xl font-black text-white active:scale-95 transition-all shadow-xl">
-                REELS OLARAK PAYLAŞ
+                class="w-full bg-white text-black p-5 rounded-2xl font-black active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2 mb-3">
+                🎬 REELS OLARAK PAYLAŞ
             </button>
 
             <a id="downloadLink" href="#" target="_blank" 
-                class="block w-full text-zinc-400 p-2 text-xs underline decoration-zinc-700">
-                Alternatif: Galeriye Kaydet
+                class="block w-full text-zinc-500 p-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition">
+                Dosyayı Cihaza İndir
             </a>
         </div>
 
-        <p id="hata" class="hidden text-red-500 mt-4 text-[11px] font-bold"></p>
-        <div id="status" class="hidden mt-4 text-zinc-500 text-[10px] uppercase font-bold tracking-tighter"></div>
+        <p id="hata" class="hidden text-red-400 mt-6 text-[11px] font-bold bg-red-900/20 p-3 rounded-xl"></p>
+        <div id="status" class="hidden mt-4 text-[#FFD700] text-[10px] font-bold uppercase tracking-widest opacity-70"></div>
     </div>
 
     <script>
@@ -52,16 +67,19 @@
             const btn = document.getElementById('islemBtn');
             const status = document.getElementById('status');
             const sonuc = document.getElementById('sonuc');
+            const hata = document.getElementById('hata');
 
-            if (!input) return alert("Link gerekli!");
+            if (!input) return alert("Kaptan, önce bir link vermen lazım!");
 
             btn.disabled = true;
             btn.innerHTML = '<span class="loader"></span>ARANIYOR...';
             status.classList.remove('hidden');
-            status.innerText = "Sunucuya bağlanılıyor...";
+            status.innerText = "Ağlar Atılıyor...";
+            sonuc.classList.add('hidden');
+            hata.classList.add('hidden');
 
             try {
-                // Hızlı Proxy Kullanımı
+                // Hızlı ve stabil bir proxy
                 const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://www.tikwm.com/api/?url=' + input)}`);
                 const data = await res.json();
                 const resData = JSON.parse(data.contents);
@@ -70,13 +88,14 @@
                     cachedVideoUrl = resData.data.hdplay || resData.data.play;
                     document.getElementById('downloadLink').href = cachedVideoUrl;
                     sonuc.classList.remove('hidden');
-                    status.innerText = "Video bulundu!";
+                    status.innerText = "Video Güvertede!";
                 } else {
-                    throw new Error("Video bulunamadı.");
+                    throw new Error("Video bulunamadı. Gizli hesap olabilir.");
                 }
             } catch (err) {
-                document.getElementById('hata').innerText = "Hata: " + err.message;
-                document.getElementById('hata').classList.remove('hidden');
+                hata.innerText = "BİR SORUN VAR: " + err.message;
+                hata.classList.remove('hidden');
+                status.classList.add('hidden');
             } finally {
                 btn.disabled = false;
                 btn.innerText = "VİDEOYU YAKALA";
@@ -90,26 +109,25 @@
             try {
                 shareBtn.disabled = true;
                 shareBtn.innerHTML = "<span>HAZIRLANIYOR...</span>";
-                status.innerText = "Video Reels için paketleniyor...";
+                status.innerText = "Ganimet Paketleiniyor...";
 
                 const response = await fetch(cachedVideoUrl);
                 const blob = await response.blob();
-                const file = new File([blob], "video.mp4", { type: "video/mp4" });
+                const file = new File([blob], "captain_video.mp4", { type: "video/mp4" });
 
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    // Bu işlem telefonun paylaşma menüsünü açar
                     await navigator.share({ 
                         files: [file],
-                        title: 'TikTok Video'
+                        title: 'Captain Downloader'
                     });
                 } else {
-                    alert("Cihazınız doğrudan paylaşımı desteklemiyor. Lütfen önce galeriye kaydedin.");
+                    alert("Bu cihaz doğrudan paylaşımı desteklemiyor. Lütfen indir butonunu kullanın.");
                 }
             } catch (e) {
-                alert("İşlem başarısız. Lütfen önce videoyu galeriye kaydedin.");
+                alert("Paylaşım sırasında bir fırtına çıktı! Önce indirmeyi deneyin.");
             } finally {
                 shareBtn.disabled = false;
-                shareBtn.innerText = "REELS OLARAK PAYLAŞ";
+                shareBtn.innerHTML = "🎬 REELS OLARAK PAYLAŞ";
                 status.innerText = "";
             }
         }
