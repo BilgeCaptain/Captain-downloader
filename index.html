@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -5,51 +6,83 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>TikTok Downloader</title>
-
-<link rel="manifest" href="manifest.json">
+<title>Captain Downloader</title>
 
 <style>
 
 body{
-background:#0f0f0f;
-color:white;
+background:linear-gradient(135deg,#0f0f0f,#1f1f1f);
 font-family:Arial;
 text-align:center;
-padding:20px;
+color:white;
+padding:30px;
+}
+
+h1{
+color:#ff0050;
+}
+
+.box{
+
+background:#1a1a1a;
+padding:25px;
+border-radius:15px;
+max-width:400px;
+margin:auto;
+box-shadow:0 0 15px rgba(0,0,0,0.5);
+
 }
 
 input{
-width:80%;
+
+width:90%;
 padding:12px;
 border-radius:10px;
 border:none;
+margin-top:10px;
+font-size:15px;
+
 }
 
 button{
-padding:12px 25px;
+
 margin-top:15px;
+padding:12px 25px;
 border:none;
 border-radius:10px;
 background:#ff0050;
 color:white;
 font-size:16px;
 cursor:pointer;
+
 }
 
-.card{
-background:#1a1a1a;
-padding:20px;
-margin-top:25px;
+button:hover{
+background:#e00046;
+}
+
+video{
+
+margin-top:20px;
 border-radius:10px;
+
+}
+
+a button{
+
+background:#00c853;
+
 }
 
 </style>
+
 </head>
 
 <body>
 
-<h1>TikTok Downloader</h1>
+<h1>Captain TikTok Downloader</h1>
+
+<div class="box">
 
 <input id="link" placeholder="TikTok video linkini yapıştır">
 
@@ -59,51 +92,44 @@ border-radius:10px;
 
 <div id="sonuc"></div>
 
+</div>
+
 <script>
 
 function indir(){
 
 let link=document.getElementById("link").value
 
-fetch("https://tikwm.com/api/?url="+link)
+let api="https://tikwm.com/api/?url="+encodeURIComponent(link)
+
+fetch(api)
 
 .then(res=>res.json())
 
 .then(data=>{
 
-let hd=data.data.hdplay
-let sd=data.data.play
+let hd=data.data.hdplay || data.data.play
 
-document.getElementById("sonuc").innerHTML=`
+let preview=data.data.play
 
-<div class="card">
+document.getElementById("sonuc").innerHTML=
 
-<h3>Video Önizleme</h3>
+`
 
-<video src="${sd}" width="300" controls></video>
-
-<br><br>
-
-<a href="${hd}" download>
-<button>HD indir (Filigransız)</button>
-</a>
+<video src="${preview}" width="100%" controls></video>
 
 <br>
 
-<a href="${sd}" download>
-<button>SD indir</button>
-</a>
+<a href="${hd}" download>
 
-</div>
+<button>En Yüksek Kaliteyi İndir</button>
+
+</a>
 
 `
 
 })
 
-}
-
-if("serviceWorker" in navigator){
-navigator.serviceWorker.register("sw.js")
 }
 
 </script>
