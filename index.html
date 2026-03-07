@@ -2,79 +2,83 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Video Downloader</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TikTok Saver</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; }
+        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .tiktok-btn { background: linear-gradient(90deg, #25F4EE 0%, #FE2C55 100%); }
+        /* iOS'ta butonlara basıldığında oluşan gri gölgeyi kaldırır */
+        * { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body class="flex items-center justify-center min-h-screen p-6">
 
-    <div class="bg-zinc-900 p-8 rounded-3xl shadow-2xl w-full max-w-md border border-zinc-800 text-center">
-        <h1 class="text-3xl font-extrabold mb-2 tracking-tighter">TIK<span class="text-[#FE2C55]">TOK</span></h1>
-        <p class="text-zinc-400 text-sm mb-8">Filigransız Video İndirici</p>
+    <div class="bg-zinc-900/50 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-white/10 text-center">
+        <h1 class="text-4xl font-black mb-1 tracking-tighter italic">TIK<span class="text-[#FE2C55]">TOK</span></h1>
+        <p class="text-zinc-500 text-[10px] mb-8 uppercase tracking-[0.2em] font-bold">iOS Optimized Saver</p>
         
-        <input type="text" id="linkInput" placeholder="TikTok linkini buraya yapıştır..." 
-            class="w-full p-4 rounded-xl bg-zinc-800 border border-zinc-700 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FE2C55] text-white">
+        <input type="text" id="linkInput" placeholder="Linke basılı tutup yapıştır..." 
+            class="w-full p-5 rounded-2xl bg-black/40 border border-white/5 mb-4 focus:outline-none focus:ring-2 focus:ring-[#25F4EE] text-white text-center text-base">
         
-        <button onclick="indir()" id="islemBtn" class="w-full tiktok-btn p-4 rounded-xl font-bold text-white hover:scale-105 transition-transform">
-            VİDEOYU BUL
+        <button onclick="indir()" id="islemBtn" class="w-full tiktok-btn p-5 rounded-2xl font-black text-white shadow-lg active:scale-95 transition-all">
+            VİDEOYU HAZIRLA
         </button>
 
-        <div id="sonuc" class="hidden mt-10 p-4 border border-zinc-700 rounded-2xl bg-black">
-            <p class="text-green-400 font-bold mb-4">Video bulundu! ✨</p>
+        <div id="sonuc" class="hidden mt-8 p-6 border border-white/10 rounded-3xl bg-black/60">
+            <p class="text-[#25F4EE] font-bold mb-4">VİDEO HAZIR! ✨</p>
+            
             <a id="downloadLink" href="#" target="_blank" 
-                class="block w-full bg-white text-black p-3 rounded-lg font-bold hover:bg-zinc-200">
-                ŞİMDİ İNDİR (MP4)
+                class="block w-full bg-white text-black p-4 rounded-xl font-black active:bg-zinc-300">
+                İNDİR / İZLE
             </a>
+            
+            <div class="mt-4 p-3 bg-zinc-800/50 rounded-lg">
+                <p class="text-zinc-400 text-[11px] leading-relaxed">
+                    <b>iPhone İçin Not:</b> Butona bastığında video açılırsa, sağ alttaki <b>paylaş (ok)</b> simgesine basıp <b>"Dosyalara Kaydet"</b> dersen galeriye iner.
+                </p>
+            </div>
         </div>
 
-        <p id="hata" class="hidden text-red-500 mt-4 text-sm font-medium"></p>
+        <p id="hata" class="hidden text-red-400 mt-6 text-sm"></p>
     </div>
 
     <script>
         async function indir() {
-            const input = document.getElementById('linkInput').value;
+            const input = document.getElementById('linkInput').value.trim();
             const btn = document.getElementById('islemBtn');
             const sonucDiv = document.getElementById('sonuc');
             const hataP = document.getElementById('hata');
             const downloadBtn = document.getElementById('downloadLink');
 
-            if (!input) {
-                alert("Lütfen bir link yapıştırın!");
-                return;
-            }
+            if (!input) return alert("Link gerekli!");
 
-            // Temizlik ve Yükleniyor durumu
-            btn.innerText = "Sorgulanıyor...";
+            btn.innerText = "İŞLENİYOR...";
             btn.disabled = true;
             sonucDiv.classList.add('hidden');
             hataP.classList.add('hidden');
 
             try {
-                // Herkese açık, KEY istemeyen TikWM servisini kullanıyoruz
-                const response = await fetch(`https://www.tikwm.com/api/?url=${input}`);
+                const proxy = "https://corsproxy.io/?"; 
+                const targetApi = `https://www.tikwm.com/api/?url=${encodeURIComponent(input)}`;
+                
+                const response = await fetch(proxy + targetApi);
                 const resData = await response.json();
                 
-                // TikWM başarılı sonuç verirse "code: 0" döndürür
                 if (resData.code === 0 && resData.data) {
-                    // Yüksek kalite (hdplay) varsa onu al, yoksa normali (play) al
                     const videoUrl = resData.data.hdplay || resData.data.play;
-                    
                     downloadBtn.href = videoUrl;
                     sonucDiv.classList.remove('hidden');
                 } else {
-                    // API videoyu bulamazsa bize mesaj gönderir
-                    throw new Error(resData.msg || "Gizli hesap veya yanlış link olabilir.");
+                    throw new Error("Video bulunamadı.");
                 }
-
             } catch (err) {
-                hataP.innerText = "Hata: " + err.message;
+                hataP.innerText = "HATA: " + err.message;
                 hataP.classList.remove('hidden');
             } finally {
-                btn.innerText = "VİDEOYU BUL";
+                btn.innerText = "VİDEOYU HAZIRLA";
                 btn.disabled = false;
             }
         }
