@@ -87,17 +87,27 @@ let data=await res.json()
 
 let video=data.data.hdplay || data.data.play
 
-document.getElementById("sonuc").innerHTML=
-
-`
+document.getElementById("sonuc").innerHTML=`
 
 <video controls src="${video}"></video>
 
-<a href="${video}" download="captain-tiktok.mp4">
-<button class="download">MP4 Filigransız İndir</button>
-</a>
+<button class="download" onclick="downloadVideo('${video}')">
+MP4 indir
+</button>
 
 `
+
+}
+
+async function downloadVideo(url){
+
+let response = await fetch(url)
+let blob = await response.blob()
+
+let a = document.createElement("a")
+a.href = URL.createObjectURL(blob)
+a.download = "captain-tiktok.mp4"
+a.click()
 
 }
 
