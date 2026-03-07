@@ -11,43 +11,49 @@
 <style>
 
 body{
-background:linear-gradient(135deg,#0f0f0f,#1f1f1f);
+margin:0;
 font-family:Arial;
-text-align:center;
+background:linear-gradient(135deg,#000,#1a1a1a);
 color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.container{
+
+background:#121212;
 padding:30px;
+border-radius:20px;
+width:350px;
+text-align:center;
+box-shadow:0 0 25px rgba(0,0,0,0.7);
+
 }
 
 h1{
+
 color:#ff0050;
-}
-
-.box{
-
-background:#1a1a1a;
-padding:25px;
-border-radius:15px;
-max-width:400px;
-margin:auto;
-box-shadow:0 0 15px rgba(0,0,0,0.5);
+margin-bottom:20px;
 
 }
 
 input{
 
-width:90%;
+width:100%;
 padding:12px;
-border-radius:10px;
 border:none;
-margin-top:10px;
+border-radius:10px;
 font-size:15px;
+margin-bottom:15px;
 
 }
 
 button{
 
-margin-top:15px;
-padding:12px 25px;
+width:100%;
+padding:12px;
 border:none;
 border-radius:10px;
 background:#ff0050;
@@ -58,19 +64,23 @@ cursor:pointer;
 }
 
 button:hover{
+
 background:#e00046;
+
 }
 
 video{
 
 margin-top:20px;
-border-radius:10px;
+width:100%;
+border-radius:12px;
 
 }
 
-a button{
+.download{
 
 background:#00c853;
+margin-top:10px;
 
 }
 
@@ -80,13 +90,11 @@ background:#00c853;
 
 <body>
 
-<h1>Captain TikTok Downloader</h1>
+<div class="container">
 
-<div class="box">
+<h1>Captain Downloader</h1>
 
-<input id="link" placeholder="TikTok video linkini yapıştır">
-
-<br>
+<input id="link" placeholder="TikTok video linki yapıştır">
 
 <button onclick="indir()">Videoyu Getir</button>
 
@@ -108,21 +116,17 @@ fetch(api)
 
 .then(data=>{
 
-let hd=data.data.hdplay || data.data.play
-
-let preview=data.data.play
+let video=data.data.hdplay || data.data.play
 
 document.getElementById("sonuc").innerHTML=
 
 `
 
-<video src="${preview}" width="100%" controls></video>
+<video src="${video}" controls></video>
 
-<br>
+<a href="${video}" download="tiktok-video.mp4">
 
-<a href="${hd}" download>
-
-<button>En Yüksek Kaliteyi İndir</button>
+<button class="download">MP4 İndir (En Yüksek Kalite)</button>
 
 </a>
 
