@@ -47,34 +47,27 @@
                 return;
             }
 
-            // Temizlik
+            // Temizlik ve Yükleniyor durumu
             btn.innerText = "Sorgulanıyor...";
             btn.disabled = true;
             sonucDiv.classList.add('hidden');
             hataP.classList.add('hidden');
 
             try {
-                // Senin görseldeki anahtarın buraya eklendi
-                const apiKey = 'ca7df27a96msh21897a777901fd0p1d06a2jsn80ca8c28abf8';
-                
-                const response = await fetch(`https://tiktok-video-no-watermark2.p.rapidapi.com/user/posts?url=${encodeURIComponent(input)}`, {
-                    method: 'GET',
-                    headers: {
-                        'x-rapidapi-key': apiKey,
-                        'x-rapidapi-host': 'tiktok-video-no-watermark2.p.rapidapi.com'
-                    }
-                });
-
+                // Herkese açık, KEY istemeyen TikWM servisini kullanıyoruz
+                const response = await fetch(`https://www.tikwm.com/api/?url=${input}`);
                 const resData = await response.json();
                 
-                // API'den gelen linki yakala
-                const videoUrl = resData.data.play || resData.data.hdplay;
-
-                if (videoUrl) {
+                // TikWM başarılı sonuç verirse "code: 0" döndürür
+                if (resData.code === 0 && resData.data) {
+                    // Yüksek kalite (hdplay) varsa onu al, yoksa normali (play) al
+                    const videoUrl = resData.data.hdplay || resData.data.play;
+                    
                     downloadBtn.href = videoUrl;
                     sonucDiv.classList.remove('hidden');
                 } else {
-                    throw new Error("Video verisi alınamadı. Linki kontrol edin.");
+                    // API videoyu bulamazsa bize mesaj gönderir
+                    throw new Error(resData.msg || "Gizli hesap veya yanlış link olabilir.");
                 }
 
             } catch (err) {
