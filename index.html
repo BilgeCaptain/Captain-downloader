@@ -5,89 +5,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Captain TikTok Downloader</title>
+<title>TikTok Downloader</title>
 
 <style>
 
 body{
-margin:0;
 font-family:Arial;
-background:linear-gradient(135deg,#000,#1f1f1f);
+background:#111;
 color:white;
 display:flex;
 justify-content:center;
 align-items:center;
-min-height:100vh;
+height:100vh;
 }
 
-.app{
-
-width:380px;
-background:#121212;
+.box{
+background:#1e1e1e;
 padding:30px;
-border-radius:20px;
-box-shadow:0 0 40px rgba(0,0,0,0.7);
+border-radius:15px;
+width:350px;
 text-align:center;
-
-}
-
-h1{
-color:#ff0050;
 }
 
 input{
-
 width:100%;
-padding:14px;
+padding:12px;
+margin-top:10px;
+border-radius:8px;
 border:none;
-border-radius:12px;
-margin-top:15px;
-font-size:15px;
-
 }
 
 button{
-
 width:100%;
-padding:14px;
-margin-top:12px;
-border:none;
-border-radius:12px;
+padding:12px;
+margin-top:10px;
 background:#ff0050;
+border:none;
+border-radius:8px;
 color:white;
-font-size:16px;
 cursor:pointer;
-
-}
-
-button:hover{
-background:#e00046;
-}
-
-video{
-
-width:100%;
-border-radius:12px;
-margin-top:15px;
-
-}
-
-.download{
-
-background:#00c853;
-
-}
-
-.download:hover{
-
-background:#00b248;
-
-}
-
-.audio{
-
-background:#2196f3;
-
 }
 
 </style>
@@ -96,67 +52,25 @@ background:#2196f3;
 
 <body>
 
-<div class="app">
+<div class="box">
 
-<h1>Captain Downloader</h1>
+<h2>TikTok Downloader</h2>
 
-<p>TikTok video linkini yapıştır</p>
+<input id="url" placeholder="TikTok linki">
 
-<input id="link" placeholder="https://www.tiktok.com/...">
-
-<button onclick="getVideo()">Videoyu Getir</button>
-
-<div id="result"></div>
+<button onclick="indir()">Video indir</button>
 
 </div>
 
 <script>
 
-function getVideo(){
+function indir(){
 
-let link=document.getElementById("link").value
+let link=document.getElementById("url").value
 
-let api="https://tikwm.com/api/?url="+encodeURIComponent(link)
-
-fetch(api)
-
-.then(res=>res.json())
-
-.then(data=>{
-
-if(!data.data){
-
-alert("Video bulunamadı")
-
-return
-
-}
-
-let video=data.data.hdplay || data.data.play
-
-let audio=data.data.music
-
-document.getElementById("result").innerHTML=
-
-`
-
-<video src="${video}" controls></video>
-
-<a href="${video}" download="tiktok-video.mp4">
-
-<button class="download">MP4 Video İndir</button>
-
-</a>
-
-<a href="${audio}" download="tiktok-audio.mp3">
-
-<button class="audio">MP3 Ses İndir</button>
-
-</a>
-
-`
-
-})
+window.open(
+"https://tikwm.com/api/?url="+encodeURIComponent(link)
+)
 
 }
 
