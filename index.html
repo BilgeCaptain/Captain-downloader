@@ -1,117 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>Captain TikTok Downloader</title>
 
 <style>
-
 body{
-font-family:Arial;
-background:#0f0f0f;
-color:white;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
+    font-family: Arial, sans-serif;
+    background:#0f0f0f;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
 }
 
 .box{
-background:#1e1e1e;
-padding:30px;
-border-radius:15px;
-width:350px;
-text-align:center;
+    background: rgba(30,30,30,0.8);
+    backdrop-filter: blur(10px);
+    padding:30px;
+    border-radius:15px;
+    width:350px;
+    text-align:center;
 }
 
 input{
-width:100%;
-padding:12px;
-margin-top:10px;
-border-radius:8px;
-border:none;
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border-radius:8px;
+    border:none;
 }
 
 button{
-width:100%;
-padding:12px;
-margin-top:10px;
-background:#ff0050;
-border:none;
-border-radius:8px;
-color:white;
-cursor:pointer;
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    background:#ff0050;
+    border:none;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;
 }
 
 video{
-width:100%;
-margin-top:20px;
-border-radius:10px;
+    width:100%;
+    margin-top:20px;
+    border-radius:10px;
 }
 
 .download{
-background:#00c853;
+    background:#00c853;
 }
-
 </style>
-
 </head>
 
 <body>
-
 <div class="box">
-
 <h2>Captain TikTok Downloader</h2>
-
 <input id="url" placeholder="TikTok linki yapıştır">
-
 <button onclick="indir()">Videoyu Getir</button>
-
 <div id="sonuc"></div>
-
 </div>
 
 <script>
-
 async function indir(){
+    let link = document.getElementById("url").value;
+    let api = "https://captain-downloader.onrender.com/download?url=" + encodeURIComponent(link);
 
-let link=document.getElementById("url").value
-
-let api="https://tikwm.com/api/?url="+encodeURIComponent(link)
-
-let res=await fetch(api)
-let data=await res.json()
-
-let video=data.data.hdplay || data.data.play
-
-document.getElementById("sonuc").innerHTML=`
-
-<video controls src="${video}"></video>
-
-<button class="download" onclick="downloadVideo('${video}')">
-MP4 indir
-</button>
-
-`
-
+    try {
+        let res = await fetch(api);
+        if(!res.ok) throw new Error("Video indirilemedi!");
+        let blob = await res.blob();
+        let a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "tiktok-video.mp4"; // MP4 olarak kaydet
+        a.click();
+    } catch(e) {
+        alert(e.message);
+    }
 }
-
-async function downloadVideo(url){
-
-let response = await fetch(url)
-let blob = await response.blob()
-
-let a = document.createElement("a")
-a.href = URL.createObjectURL(blob)
-a.download = "captain-tiktok.mp4"
-a.click()
-
-}
-
 </script>
-
 </body>
 </html>
