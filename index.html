@@ -12,7 +12,8 @@
         body { 
             background: #001220; 
             color: #fff; 
-            font-family: 'Poppins', sans-serif; 
+            font-family: 'Poppins', -apple-system, sans-serif; 
+            -webkit-font-smoothing: antialiased;
         }
         /* Kaptan Temalı Altın ve Lacivert Geçişi */
         .captain-gradient { background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%); }
@@ -27,10 +28,11 @@
     <div class="captain-bg p-8 rounded-[3rem] w-full max-w-sm text-center shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div class="mb-6">
             <div class="text-4xl mb-2">⚓</div>
-            <h1 class="text-2xl font-black tracking-tight leading-tight">CAPTAIN<br><span class="text-[#FFD700]">DOWNLOADER</span></h1>
+            <h1 class="text-2xl font-black tracking-tight leading-tight uppercase">CAPTAIN<br><span class="text-[#FFD700]">DOWNLOADER</span></h1>
+            <p class="text-zinc-500 text-[9px] uppercase tracking-[0.3em] mt-2 font-bold">iOS & Reels Optimized</p>
         </div>
 
-        <input type="text" id="linkInput" placeholder="TikTok Linkini Dümenle..." 
+        <input type="text" id="linkInput" placeholder="TikTok Linkini Yapıştır..." 
             class="w-full p-4 rounded-2xl bg-black/40 border border-yellow-600/30 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FFD700] text-white text-center text-sm transition-all placeholder:text-zinc-600">
         
         <button onclick="indir()" id="islemBtn" class="w-full captain-gradient p-5 rounded-2xl font-black text-[#001220] shadow-lg active:scale-95 transition-all uppercase tracking-tighter">
@@ -50,9 +52,15 @@
             </button>
 
             <a id="downloadLink" href="#" target="_blank" 
-                class="block w-full text-zinc-500 p-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition">
-                Dosyayı Cihaza İndir
+                class="block w-full text-zinc-400 p-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition underline decoration-zinc-800">
+                Sadece Cihaza İndir
             </a>
+
+            <div class="mt-4 p-3 bg-white/5 rounded-xl border border-white/5">
+                <p class="text-[10px] text-zinc-500 leading-tight">
+                    <b>iPhone:</b> Paylaş butonu çalışmazsa videoyu indirip Safari'de "Paylaş > Videoyu Kaydet" yapın.
+                </p>
+            </div>
         </div>
 
         <p id="hata" class="hidden text-red-400 mt-6 text-[11px] font-bold bg-red-900/20 p-3 rounded-xl"></p>
@@ -69,33 +77,33 @@
             const sonuc = document.getElementById('sonuc');
             const hata = document.getElementById('hata');
 
-            if (!input) return alert("Kaptan, önce bir link vermen lazım!");
+            if (!input) return alert("Kaptan, linki unuttun!");
 
             btn.disabled = true;
             btn.innerHTML = '<span class="loader"></span>ARANIYOR...';
             status.classList.remove('hidden');
-            status.innerText = "Ağlar Atılıyor...";
+            status.innerText = "Sular taranıyor...";
             sonuc.classList.add('hidden');
             hata.classList.add('hidden');
 
             try {
-                // Hızlı ve stabil bir proxy
-                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent('https://www.tikwm.com/api/?url=' + input)}`);
-                const data = await res.json();
+                // Hızlı Proxy (allorigins)
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://www.tikwm.com/api/?url=' + input)}`;
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
                 const resData = JSON.parse(data.contents);
 
-                if (resData.code === 0) {
+                if (resData.code === 0 && resData.data) {
                     cachedVideoUrl = resData.data.hdplay || resData.data.play;
                     document.getElementById('downloadLink').href = cachedVideoUrl;
                     sonuc.classList.remove('hidden');
-                    status.innerText = "Video Güvertede!";
+                    status.innerText = "Ganimet Güvertede!";
                 } else {
-                    throw new Error("Video bulunamadı. Gizli hesap olabilir.");
+                    throw new Error("Video bulunamadı.");
                 }
             } catch (err) {
-                hata.innerText = "BİR SORUN VAR: " + err.message;
+                hata.innerText = "FIRTINA ÇIKTI: " + err.message;
                 hata.classList.remove('hidden');
-                status.classList.add('hidden');
             } finally {
                 btn.disabled = false;
                 btn.innerText = "VİDEOYU YAKALA";
@@ -105,29 +113,34 @@
         async function reelsPaylas() {
             const shareBtn = document.getElementById('shareBtn');
             const status = document.getElementById('status');
-            
+            const originalContent = shareBtn.innerHTML;
+
             try {
                 shareBtn.disabled = true;
                 shareBtn.innerHTML = "<span>HAZIRLANIYOR...</span>";
-                status.innerText = "Ganimet Paketleiniyor...";
+                status.innerText = "Reels için paketleniyor...";
 
+                // Videoyu Blob olarak çek (Paylaşım menüsü için şart)
                 const response = await fetch(cachedVideoUrl);
                 const blob = await response.blob();
                 const file = new File([blob], "captain_video.mp4", { type: "video/mp4" });
 
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({ 
+                    await navigator.share({
                         files: [file],
-                        title: 'Captain Downloader'
+                        title: 'Captain Downloader',
+                        text: 'Reels olarak paylaş!'
                     });
                 } else {
-                    alert("Bu cihaz doğrudan paylaşımı desteklemiyor. Lütfen indir butonunu kullanın.");
+                    // Fallback: Instagram'ı aç
+                    window.location.href = "instagram://camera";
                 }
-            } catch (e) {
-                alert("Paylaşım sırasında bir fırtına çıktı! Önce indirmeyi deneyin.");
+            } catch (err) {
+                console.error(err);
+                alert("Paylaşım başarısız. Lütfen videoyu önce indirin.");
             } finally {
                 shareBtn.disabled = false;
-                shareBtn.innerHTML = "🎬 REELS OLARAK PAYLAŞ";
+                shareBtn.innerHTML = originalContent;
                 status.innerText = "";
             }
         }
