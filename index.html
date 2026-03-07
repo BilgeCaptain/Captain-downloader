@@ -3,49 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TikTok Saver</title>
+    <title>Captain Video Downloader</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .tiktok-btn { background: linear-gradient(90deg, #25F4EE 0%, #FE2C55 100%); }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap');
+        
+        body { 
+            background: #001220; 
+            color: #fff; 
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        }
+
+        /* Captain Temalı Özel Tasarım */
+        .captain-card { 
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255, 215, 0, 0.2); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .captain-btn { 
+            background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%); 
+            color: #001220;
+        }
+
         /* iOS'ta butonlara basıldığında oluşan gri gölgeyi kaldırır */
         * { -webkit-tap-highlight-color: transparent; }
+        
+        input::placeholder { color: rgba(255, 255, 255, 0.3); }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-6">
 
-    <div class="bg-zinc-900/50 backdrop-blur-xl p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-white/10 text-center">
-        <h1 class="text-4xl font-black mb-1 tracking-tighter italic">TIK<span class="text-[#FE2C55]">TOK</span></h1>
-        <p class="text-zinc-500 text-[10px] mb-8 uppercase tracking-[0.2em] font-bold">iOS Optimized Saver</p>
+    <div class="captain-card p-8 rounded-[3rem] w-full max-w-md text-center">
+        <div class="mb-6">
+            <div class="text-4xl mb-2">⚓</div>
+            <h1 class="text-3xl font-black mb-1 tracking-tighter italic uppercase leading-none">CAPTAIN<br><span class="text-[#FFD700]">DOWNLOADER</span></h1>
+            <p class="text-zinc-500 text-[10px] mb-4 uppercase tracking-[0.2em] font-bold">iOS Optimized Saver</p>
+        </div>
         
         <input type="text" id="linkInput" placeholder="Linke basılı tutup yapıştır..." 
-            class="w-full p-5 rounded-2xl bg-black/40 border border-white/5 mb-4 focus:outline-none focus:ring-2 focus:ring-[#25F4EE] text-white text-center text-base">
+            class="w-full p-5 rounded-2xl bg-black/40 border border-white/5 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FFD700] text-white text-center text-base transition-all">
         
-        <button onclick="indir()" id="islemBtn" class="w-full tiktok-btn p-5 rounded-2xl font-black text-white shadow-lg active:scale-95 transition-all">
+        <button onclick="indir()" id="islemBtn" class="w-full captain-btn p-5 rounded-2xl font-black shadow-lg active:scale-95 transition-all uppercase tracking-tight">
             VİDEOYU HAZIRLA
         </button>
 
-        <div id="sonuc" class="hidden mt-8 p-6 border border-white/10 rounded-3xl bg-black/60">
-            <p class="text-[#25F4EE] font-bold mb-4">VİDEO HAZIR! ✨</p>
+        <div id="sonuc" class="hidden mt-8 p-6 border border-yellow-600/20 rounded-3xl bg-black/60">
+            <p class="text-[#FFD700] font-bold mb-4 uppercase tracking-widest text-xs">Ganimet Hazır! ✨</p>
             
             <a id="downloadLink" href="#" target="_blank" 
-                class="block w-full bg-white text-black p-4 rounded-xl font-black active:bg-zinc-300">
+                class="block w-full bg-white text-black p-4 rounded-xl font-black active:bg-zinc-300 transition-colors">
                 İNDİR / İZLE
             </a>
             
-            <div class="mt-4 p-3 bg-zinc-800/50 rounded-lg">
+            <div class="mt-4 p-3 bg-zinc-800/30 rounded-lg border border-white/5 text-left">
                 <p class="text-zinc-400 text-[11px] leading-relaxed">
-                    <b>iPhone İçin Not:</b> Butona bastığında video açılırsa, sağ alttaki <b>paylaş (ok)</b> simgesine basıp <b>"Dosyalara Kaydet"</b> dersen galeriye iner.
+                    <b>Kaptan'ın Notu:</b> Butona bastığında video açılırsa, sağ alttaki <b>paylaş (ok)</b> simgesine basıp <b>"Dosyalara Kaydet"</b> dersen galeriye iner.
                 </p>
             </div>
         </div>
 
-        <p id="hata" class="hidden text-red-400 mt-6 text-sm"></p>
+        <p id="hata" class="hidden text-red-400 mt-6 text-sm font-bold bg-red-900/20 p-3 rounded-xl"></p>
     </div>
 
     <script>
+        // Senin Gönderdiğin Orijinal Fonksiyon (Hiç Dokunulmadı)
         async function indir() {
             const input = document.getElementById('linkInput').value.trim();
             const btn = document.getElementById('islemBtn');
@@ -85,4 +110,3 @@
     </script>
 </body>
 </html>
-Bu kodu hic ellemeden sadece tasarimini son tasarimla birlestir hicbir fonksiyon degismesin
