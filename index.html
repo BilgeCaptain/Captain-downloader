@@ -3,86 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Haftalık Dambıl Programı</title>
+    <title>Dambıl Akademi | Animasyonlu Program</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Dambıl Hareket Animasyonu */
+        @keyframes workout-lift {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        .animate-lift {
+            animation: workout-lift 2s ease-in-out infinite;
+        }
+        .card:hover .workout-icon {
+            animation-play-state: running;
+        }
+        .workout-icon {
+            animation-play-state: paused; /* Sadece kartın üzerine gelince veya sürekli oynasın mı? Sürekli oynasın dersek bunu kaldırabiliriz. */
+        }
+    </style>
 </head>
-<body class="bg-slate-900 text-slate-200 font-sans leading-relaxed">
+<body class="bg-gray-950 text-gray-200 font-sans">
 
-    <header class="bg-gradient-to-r from-blue-800 to-indigo-900 py-12 text-center shadow-2xl">
-        <h1 class="text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">4 Günlük Bölgesel Program</h1>
-        <p class="mt-3 text-blue-200 text-lg">Maksimum verim için her bölgeye özel odaklanma.</p>
+    <header class="bg-indigo-900/50 backdrop-blur-md sticky top-0 z-50 py-6 border-b border-indigo-500/30">
+        <div class="max-w-6xl mx-auto px-6 flex justify-between items-center">
+            <h1 class="text-2xl font-black tracking-tighter text-white uppercase italic">Dumbbell <span class="text-indigo-400">Pro</span></h1>
+            <p class="text-sm font-medium text-indigo-300 bg-indigo-500/10 px-4 py-1 rounded-full border border-indigo-500/20">Haftalık Bölgesel Antrenman</p>
+        </div>
     </header>
 
-    <main class="max-w-5xl mx-auto p-6 space-y-12">
-        
+    <main class="max-w-6xl mx-auto p-6 space-y-16 mt-8">
+
         <section>
-            <div class="flex items-center gap-4 mb-6">
-                <span class="bg-red-600 text-white px-4 py-1 rounded-full text-sm font-bold uppercase">1. GÜN</span>
-                <h2 class="text-3xl font-bold text-white">Göğüs & Arka Kol (Triceps)</h2>
+            <div class="flex items-center gap-3 mb-8">
+                <div class="h-10 w-10 bg-red-600 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-red-600/20">01</div>
+                <h2 class="text-3xl font-extrabold tracking-tight">Göğüs & Arka Kol</h2>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-slate-800 p-6 rounded-2xl border-l-4 border-red-500 shadow-lg">
-                    <h3 class="text-xl font-bold mb-2">Dumbbell Fly</h3>
-                    <p class="text-slate-400">Göğüs kaslarını açarak esnetir ve şekillendirir.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-gray-900 border border-gray-800 p-6 rounded-3xl hover:border-red-500/50 transition-all group card">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="p-4 bg-gray-800 rounded-2xl group-hover:bg-red-600/10 transition-colors">
+                            <i class="fas fa-dumbbell text-2xl text-red-500 animate-lift workout-icon"></i>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-2xl font-black text-white">4 Set</span>
+                            <span class="text-red-500 font-bold uppercase text-xs tracking-widest">12 Tekrar</span>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">Dumbbell Bench Press</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed">Göğüs hacmi için temel hareket. Ağırlıkları kontrollü indirin.</p>
                 </div>
-                <div class="bg-slate-800 p-6 rounded-2xl border-l-4 border-red-500 shadow-lg">
-                    <h3 class="text-xl font-bold mb-2">Dumbbell Floor Press</h3>
-                    <p class="text-slate-400">Bench yoksa yerde yapılabilir, göğüs ve triceps'i ateşler.</p>
-                </div>
-                <div class="bg-slate-800 p-6 rounded-2xl border-l-4 border-red-500 shadow-lg">
-                    <h3 class="text-xl font-bold mb-2">Overhead Extension</h3>
-                    <p class="text-slate-400">Arka kolu tamamen uzatarak izole bir şekilde çalıştırır.</p>
+
+                <div class="bg-gray-900 border border-gray-800 p-6 rounded-3xl hover:border-red-500/50 transition-all group card">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="p-4 bg-gray-800 rounded-2xl group-hover:bg-red-600/10">
+                            <i class="fas fa-arrows-left-right text-2xl text-red-500 animate-lift workout-icon"></i>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-2xl font-black text-white">3 Set</span>
+                            <span class="text-red-500 font-bold uppercase text-xs tracking-widest">15 Tekrar</span>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">Dumbbell Fly</h3>
+                    <p class="text-gray-500 text-sm">Göğüs kaslarını açarak esnetme sağlar. Dirsekleri hafif bükülü tutun.</p>
                 </div>
             </div>
         </section>
 
         <section>
-            <div class="flex items-center gap-4 mb-6">
-                <span class="bg-emerald-600 text-white px-4 py-1 rounded-full text-sm font-bold uppercase">2. GÜN</span>
-                <h2 class="text-3xl font-bold text-white">Sırt & Ön Kol (Biceps)</h2>
+            <div class="flex items-center gap-3 mb-8">
+                <div class="h-10 w-10 bg-emerald-600 rounded-lg flex items-center justify-center font-bold text-white">02</div>
+                <h2 class="text-3xl font-extrabold tracking-tight">Sırt & Ön Kol</h2>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-slate-800 p-6 rounded-2xl border-l-4 border-emerald-500 shadow-lg">
-                    <h3 class="text-xl font-bold mb-2">Renegade Row</h3>
-                    <p class="text-slate-400">Şınav pozisyonunda dambıl çekişi. Hem sırt hem de merkez bölge (core) için mükemmeldir.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-gray-900 border border-gray-800 p-6 rounded-3xl hover:border-emerald-500/50 transition-all group card">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="p-4 bg-gray-800 rounded-2xl group-hover:bg-emerald-600/10">
+                            <i class="fas fa-arrow-up text-2xl text-emerald-500 animate-lift workout-icon"></i>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-2xl font-black text-white">4 Set</span>
+                            <span class="text-emerald-500 font-bold uppercase text-xs tracking-widest">10 Tekrar</span>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">One Arm Row</h3>
+                    <p class="text-gray-500 text-sm">Sırt genişliği için dambılı kalçanıza doğru çekin.</p>
                 </div>
-                <div class="bg-slate-800 p-6 rounded-2xl border-l-4 border-emerald-500 shadow-lg">
-                    <h3 class="text-xl font-bold mb-2">Hammer Curl</h3>
-                    <p class="text-slate-400">Biceps ve ön kolun yan kısımlarını kalınlaştırmak için yapılır.</p>
-                </div>
-                <div class="bg-slate-800 p-6 rounded-2xl border-l-4 border-emerald-500 shadow-lg">
-                    <h3 class="text-xl font-bold mb-2">Two Arm Row</h3>
-                    <p class="text-slate-400">Eğilerek her iki dambılı aynı anda çekerek sırt genişliğini artırın.</p>
+
+                <div class="bg-gray-900 border border-gray-800 p-6 rounded-3xl hover:border-emerald-500/50 transition-all group card">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="p-4 bg-gray-800 rounded-2xl group-hover:bg-emerald-600/10">
+                            <i class="fas fa-hand-fist text-2xl text-emerald-500 animate-lift workout-icon"></i>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-2xl font-black text-white">3 Set</span>
+                            <span class="text-emerald-500 font-bold uppercase text-xs tracking-widest">12 Tekrar</span>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">Hammer Curl</h3>
+                    <p class="text-gray-500 text-sm">Biceps ve ön kolu kalınlaştırır. Dambılları nötr tutun.</p>
                 </div>
             </div>
         </section>
 
-        <section>
-            <div class="flex items-center gap-4 mb-6">
-                <span class="bg-amber-500 text-white px-4 py-1 rounded-full text-sm font-bold uppercase">3. GÜN</span>
-                <h2 class="text-3xl font-bold text-white">Omuz & Karın (Core)</h2>
+        <div class="bg-indigo-900/20 border border-indigo-500/30 p-8 rounded-[2rem] flex flex-col md:flex-row items-center gap-6">
+            <div class="text-4xl text-indigo-400">
+                <i class="fas fa-circle-info"></i>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-slate-800 p-6 rounded-2xl border-l-4 border-amber-500 shadow-lg">
-                    <h3 class="text-xl font-bold mb-2">Lateral Raise</h3>
-                    <p class="text-slate-400">Omuzların geniş görünmesini sağlayan yan omuz hareketidir.</p>
-                </div>
-                <div class="bg-slate-800 p-6 rounded-2xl border-l-4 border-amber-500 shadow-lg">
-                    <h3 class="text-xl font-bold mb-2">Arnold Press</h3>
-                    <p class="text-slate-400">Dönüş hareketiyle omuzun tüm başlarını devreye sokar.</p>
-                </div>
-                <div class="bg-slate-800 p-6 rounded-2xl border-l-4 border-amber-500 shadow-lg">
-                    <h3 class="text-xl font-bold mb-2">Dumbbell Woodchopper</h3>
-                    <p class="text-slate-400">Karın ve yan karın kaslarını dinamik bir şekilde çalıştırır.</p>
-                </div>
+            <div>
+                <h4 class="text-xl font-bold text-white">Önemli İpucu</h4>
+                <p class="text-indigo-200/70">Animasyonlardaki ritmi takip etmeye çalışın. Hareketin "iniş" fazını her zaman "kaldırma" fazından biraz daha yavaş yapın (2 saniye kuralı).</p>
             </div>
-        </section>
+        </div>
 
-        <section>
-            <div class="flex items-center gap-4 mb-6">
-                <span class="bg-indigo-600 text-white px-4 py-1 rounded-full text-sm font-bold uppercase">4. GÜN</span>
-                <h2 class="text-3xl font-bold text-white">Bacak & Alt Vücut</h2>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg
+    </main>
+
+    <footer class="py-12 bg-gray-900 mt-20 text-center border-t border-gray-800">
+        <p class="text-gray-500 text-sm">2026 &copy; <span class="text-gray-300">Dumbbell Pro v2.0</span></p>
+    </footer>
+
+</body>
+</html>
