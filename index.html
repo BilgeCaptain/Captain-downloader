@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dumbbell Pro | Haftalık Split Program</title>
+    <title>Dumbbell Pro | Üst Vücut Odaklı</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -16,9 +16,9 @@
 
     <nav class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 p-5 shadow-2xl">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-black text-white italic uppercase tracking-tighter">Dumbbell <span class="text-indigo-500">Master</span></h1>
-            <div class="bg-indigo-600/20 text-indigo-400 px-4 py-2 rounded-full border border-indigo-500/30 text-xs font-bold uppercase tracking-widest">
-                Sehpasız Tam Program
+            <h1 class="text-2xl font-black text-white italic uppercase tracking-tighter">Dumbbell <span class="text-sky-500">Upper</span></h1>
+            <div class="bg-sky-600/20 text-sky-400 px-4 py-2 rounded-full border border-sky-500/30 text-xs font-bold uppercase tracking-widest">
+                Sadece Üst Vücut
             </div>
         </div>
     </nav>
@@ -31,7 +31,7 @@
                     <div class="h-14 w-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black italic shadow-lg shadow-blue-600/20 text-xl">D1</div>
                     <div>
                         <h2 class="text-2xl font-black text-white">Göğüs & Arka Kol</h2>
-                        <p class="text-sm text-slate-400 mt-1">Süre: ~45 Dk | Odak: İtiş Gücü</p>
+                        <p class="text-sm text-slate-400 mt-1">Toplam: 7 Set | Bitiş: ~45 Dk</p>
                     </div>
                 </div>
                 <i class="fas fa-chevron-down transition-transform group-open:rotate-180 text-blue-500 text-xl"></i>
@@ -39,94 +39,33 @@
             
             <div class="p-6 pt-0">
                 <div class="mb-6 bg-blue-900/20 border-l-4 border-blue-500 p-5 rounded-r-2xl text-sm leading-relaxed">
-                    <strong>Neden Yeterli?</strong> Bu antrenmanda yer pressi (floor press) ile göğüs hacmini hedeflerken, açış hareketiyle esnetme yapıyoruz. Toplam 7 set, kas liflerini uyarmak ve ev ortamında sakatlanmadan gelişmek için <strong>idealdir.</strong>
+                    <strong>Hedef:</strong> Sehpa gerektirmeyen yer pressi ile göğsü, overhead extension ile arka kolu hedefle. Bu 7 setlik kombo, üst vücut itiş kaslarını uyarmak için <strong>yeterli olacaktır.</strong>
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden flex flex-col">
-                        <div class="relative aspect-video bg-black">
+                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden">
+                        <div class="relative aspect-video">
                             <video class="w-full h-full object-cover opacity-70" autoplay loop muted playsinline>
                                 <source src="https://assets.mixkit.co/videos/preview/mixkit-man-training-with-dumbbells-in-gym-slow-motion-23000-large.mp4" type="video/mp4">
                             </video>
                             <div class="absolute inset-0 video-overlay"></div>
                         </div>
                         <div class="p-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-xl font-bold text-white">Dumbbell Floor Press</h3>
-                                <span class="text-blue-400 font-bold px-3 py-1 bg-blue-500/10 rounded-lg">4 x 12</span>
-                            </div>
-                            <p class="text-sm text-slate-400 italic">Yere uzan, dambılları yukarı bas. Dirseklerin yere hafifçe değsin.</p>
-                            <button onclick="startTimer(this, 60)" class="w-full mt-6 bg-slate-900 py-4 rounded-xl font-bold hover:bg-blue-600 transition-all">60s Mola</button>
+                            <h3 class="text-xl font-bold text-white mb-2">Floor Press</h3>
+                            <span class="text-blue-400 font-bold px-3 py-1 bg-blue-500/10 rounded-lg text-sm">4 x 12</span>
+                            <button onclick="startTimer(this, 60)" class="w-full mt-4 bg-slate-900 py-4 rounded-xl font-bold hover:bg-blue-600 transition-all">60s Mola</button>
                         </div>
                     </div>
-                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden flex flex-col">
-                        <div class="relative aspect-video bg-black">
+                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden">
+                        <div class="relative aspect-video">
                             <video class="w-full h-full object-cover opacity-70" autoplay loop muted playsinline>
                                 <source src="https://assets.mixkit.co/videos/preview/mixkit-man-exercising-triceps-with-one-dumbbell-40545-large.mp4" type="video/mp4">
                             </video>
                             <div class="absolute inset-0 video-overlay"></div>
                         </div>
                         <div class="p-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-xl font-bold text-white">Overhead Triceps</h3>
-                                <span class="text-blue-400 font-bold px-3 py-1 bg-blue-500/10 rounded-lg">3 x 15</span>
-                            </div>
-                            <p class="text-sm text-slate-400 italic">Dambılı baş arkasına indirip kaldır. Arka kolunu iyice sık.</p>
-                            <button onclick="startTimer(this, 45)" class="w-full mt-6 bg-slate-900 py-4 rounded-xl font-bold hover:bg-blue-600 transition-all">45s Mola</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </details>
-
-        <details class="group bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-lg">
-            <summary class="flex items-center justify-between cursor-pointer p-6 hover:bg-slate-800/50 transition-all">
-                <div class="flex items-center gap-5">
-                    <div class="h-14 w-14 bg-emerald-600 rounded-2xl flex items-center justify-center text-white font-black italic shadow-lg shadow-emerald-600/20 text-xl">D2</div>
-                    <div>
-                        <h2 class="text-2xl font-black text-white">Sırt & Ön Kol</h2>
-                        <p class="text-sm text-slate-400 mt-1">Süre: ~45 Dk | Odak: Çekiş & Hacim</p>
-                    </div>
-                </div>
-                <i class="fas fa-chevron-down transition-transform group-open:rotate-180 text-emerald-500 text-xl"></i>
-            </summary>
-            
-            <div class="p-6 pt-0">
-                <div class="mb-6 bg-emerald-900/20 border-l-4 border-emerald-500 p-5 rounded-r-2xl text-sm leading-relaxed">
-                    <strong>Neden Yeterli?</strong> Bent Over Row, sırtın kalınlaşması için en etkili harekettir. 4 set çekiş ve 4 set curl hareketi, hem postürünü düzeltir hem de kollarının dolgun görünmesini sağlar. <strong>8 seti bitir ve dinlenmeye geç.</strong>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden flex flex-col">
-                        <div class="relative aspect-video bg-black">
-                            <video class="w-full h-full object-cover opacity-70" autoplay loop muted playsinline>
-                                <source src="https://assets.mixkit.co/videos/preview/mixkit-athlete-doing-a-heavy-weight-workout-43183-large.mp4" type="video/mp4">
-                            </video>
-                            <div class="absolute inset-0 video-overlay"></div>
-                        </div>
-                        <div class="p-6">
-                            <div class="flex justify-between items-center mb-4 text-left">
-                                <h3 class="text-xl font-bold text-white">Bent Over Row</h3>
-                                <span class="text-emerald-400 font-bold px-3 py-1 bg-emerald-500/10 rounded-lg">4 x 12</span>
-                            </div>
-                            <p class="text-sm text-slate-400 italic">Öne hafifçe eğil, sırtın düz olsun. Dambılları kalçana çek.</p>
-                            <button onclick="startTimer(this, 60)" class="w-full mt-6 bg-slate-900 py-4 rounded-xl font-bold hover:bg-emerald-600 transition-all">60s Mola</button>
-                        </div>
-                    </div>
-                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden flex flex-col">
-                        <div class="relative aspect-video bg-black">
-                            <video class="w-full h-full object-cover opacity-70" autoplay loop muted playsinline>
-                                <source src="https://assets.mixkit.co/videos/preview/mixkit-man-lifting-dumbbells-in-a-gym-23049-large.mp4" type="video/mp4">
-                            </video>
-                            <div class="absolute inset-0 video-overlay"></div>
-                        </div>
-                        <div class="p-6">
-                            <div class="flex justify-between items-center mb-4 text-left">
-                                <h3 class="text-xl font-bold text-white">Biceps Curl</h3>
-                                <span class="text-emerald-400 font-bold px-3 py-1 bg-emerald-500/10 rounded-lg">4 x 10</span>
-                            </div>
-                            <p class="text-sm text-slate-400 italic">Dirseklerini sabit tut ve dambılları kontrollü kaldır.</p>
-                            <button onclick="startTimer(this, 45)" class="w-full mt-6 bg-slate-900 py-4 rounded-xl font-bold hover:bg-emerald-600 transition-all">45s Mola</button>
+                            <h3 class="text-xl font-bold text-white mb-2">Overhead Triceps</h3>
+                            <span class="text-blue-400 font-bold px-3 py-1 bg-blue-500/10 rounded-lg text-sm">3 x 15</span>
+                            <button onclick="startTimer(this, 45)" class="w-full mt-4 bg-slate-900 py-4 rounded-xl font-bold hover:bg-blue-600 transition-all">45s Mola</button>
                         </div>
                     </div>
                 </div>
@@ -136,51 +75,91 @@
         <details class="group bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden">
             <summary class="flex items-center justify-between cursor-pointer p-6 hover:bg-slate-800/50 transition-all">
                 <div class="flex items-center gap-5">
-                    <div class="h-14 w-14 bg-orange-600 rounded-2xl flex items-center justify-center text-white font-black italic shadow-lg shadow-orange-600/20 text-xl">D3</div>
+                    <div class="h-14 w-14 bg-emerald-600 rounded-2xl flex items-center justify-center text-white font-black italic shadow-lg shadow-emerald-600/20 text-xl">D2</div>
                     <div>
-                        <h2 class="text-2xl font-black text-white">Omuz & Bacak</h2>
-                        <p class="text-sm text-slate-400 mt-1">Süre: ~50 Dk | Odak: Genişlik & Güç</p>
+                        <h2 class="text-2xl font-black text-white">Sırt & Ön Kol</h2>
+                        <p class="text-sm text-slate-400 mt-1">Toplam: 8 Set | Bitiş: ~45 Dk</p>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-down transition-transform group-open:rotate-180 text-emerald-500 text-xl"></i>
+            </summary>
+            
+            <div class="p-6 pt-0">
+                <div class="mb-6 bg-emerald-900/20 border-l-4 border-emerald-500 p-5 rounded-r-2xl text-sm leading-relaxed">
+                    <strong>Hedef:</strong> Sırt kalınlığı için "Bent Over Row" ve kollar için "Biceps Curl". 8 seti disiplinli bitirdiğinde postürün düzelecek ve kolların güçlenecektir.
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden">
+                        <div class="relative aspect-video">
+                            <video class="w-full h-full object-cover opacity-70" autoplay loop muted playsinline>
+                                <source src="https://assets.mixkit.co/videos/preview/mixkit-athlete-doing-a-heavy-weight-workout-43183-large.mp4" type="video/mp4">
+                            </video>
+                            <div class="absolute inset-0 video-overlay"></div>
+                        </div>
+                        <div class="p-6 text-left">
+                            <h3 class="text-xl font-bold text-white mb-2">Bent Over Row</h3>
+                            <span class="text-emerald-400 font-bold px-3 py-1 bg-emerald-500/10 rounded-lg text-sm">4 x 12</span>
+                            <button onclick="startTimer(this, 60)" class="w-full mt-4 bg-slate-900 py-4 rounded-xl font-bold hover:bg-emerald-600 transition-all">60s Mola</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden">
+                        <div class="relative aspect-video">
+                            <video class="w-full h-full object-cover opacity-70" autoplay loop muted playsinline>
+                                <source src="https://assets.mixkit.co/videos/preview/mixkit-man-lifting-dumbbells-in-a-gym-23049-large.mp4" type="video/mp4">
+                            </video>
+                            <div class="absolute inset-0 video-overlay"></div>
+                        </div>
+                        <div class="p-6 text-left">
+                            <h3 class="text-xl font-bold text-white mb-2">Biceps Curl</h3>
+                            <span class="text-emerald-400 font-bold px-3 py-1 bg-emerald-500/10 rounded-lg text-sm">4 x 10</span>
+                            <button onclick="startTimer(this, 45)" class="w-full mt-4 bg-slate-900 py-4 rounded-xl font-bold hover:bg-emerald-600 transition-all">45s Mola</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <details class="group bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden">
+            <summary class="flex items-center justify-between cursor-pointer p-6 hover:bg-slate-800/50 transition-all">
+                <div class="flex items-center gap-5">
+                    <div class="h-14 w-14 bg-orange-500 rounded-2xl flex items-center justify-center text-white font-black italic shadow-lg shadow-orange-500/20 text-xl">D3</div>
+                    <div>
+                        <h2 class="text-2xl font-black text-white">Omuz & Genişlik</h2>
+                        <p class="text-sm text-slate-400 mt-1">Toplam: 8 Set | Bitiş: ~40 Dk</p>
                     </div>
                 </div>
                 <i class="fas fa-chevron-down transition-transform group-open:rotate-180 text-orange-500 text-xl"></i>
             </summary>
             
             <div class="p-6 pt-0">
-                <div class="mb-6 bg-orange-900/20 border-l-4 border-orange-500 p-5 rounded-r-2xl text-sm leading-relaxed">
-                    <strong>Neden Yeterli?</strong> Goblet Squat tüm vücudunu ateşler, Shoulder Press ise omuzlarını genişletir. 8-10 setlik bu yoğun gün, haftanın en çok kalori yaktıran günü olacak. <strong>Bitirdiğinde farkı hissedeceksin.</strong>
+                <div class="mb-6 bg-orange-900/20 border-l-4 border-orange-500 p-5 rounded-r-2xl text-sm leading-relaxed text-left">
+                    <strong>Hedef:</strong> Omuzları genişletmek için Press ve Lateral Raise hareketlerini kullanıyoruz. Karın çalışmayacağımız için bu gün sadece omuz odağında kalarak <strong>bitiyor.</strong>
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden flex flex-col">
-                        <div class="relative aspect-video bg-black text-left">
+                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden">
+                        <div class="relative aspect-video">
                             <video class="w-full h-full object-cover opacity-70" autoplay loop muted playsinline>
                                 <source src="https://assets.mixkit.co/videos/preview/mixkit-man-doing-shoulder-press-exercise-with-dumbbells-43180-large.mp4" type="video/mp4">
                             </video>
                             <div class="absolute inset-0 video-overlay"></div>
                         </div>
-                        <div class="p-6">
-                            <div class="flex justify-between items-center mb-4 text-left">
-                                <h3 class="text-xl font-bold text-white text-left">Shoulder Press</h3>
-                                <span class="text-orange-400 font-bold px-3 py-1 bg-orange-500/10 rounded-lg">4 x 12</span>
-                            </div>
-                            <p class="text-sm text-slate-400 italic">Dambılları yukarı it. Belini bükmemeye dikkat et.</p>
-                            <button onclick="startTimer(this, 60)" class="w-full mt-6 bg-slate-900 py-4 rounded-xl font-bold hover:bg-orange-600 transition-all">60s Mola</button>
+                        <div class="p-6 text-left">
+                            <h3 class="text-xl font-bold text-white mb-2">Shoulder Press</h3>
+                            <span class="text-orange-400 font-bold px-3 py-1 bg-orange-500/10 rounded-lg text-sm">4 x 12</span>
+                            <button onclick="startTimer(this, 60)" class="w-full mt-4 bg-slate-900 py-4 rounded-xl font-bold hover:bg-orange-600 transition-all">60s Mola</button>
                         </div>
                     </div>
-                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden flex flex-col">
-                        <div class="relative aspect-video bg-black">
+                    <div class="bg-slate-950 rounded-[2rem] border border-slate-800 overflow-hidden">
+                        <div class="relative aspect-video">
                             <video class="w-full h-full object-cover opacity-70" autoplay loop muted playsinline>
-                                <source src="https://assets.mixkit.co/videos/preview/mixkit-man-doing-squats-with-dumbbells-43181-large.mp4" type="video/mp4">
+                                <source src="https://assets.mixkit.co/videos/preview/mixkit-athlete-training-with-dumbbells-43187-large.mp4" type="video/mp4">
                             </video>
                             <div class="absolute inset-0 video-overlay"></div>
                         </div>
-                        <div class="p-6">
-                            <div class="flex justify-between items-center mb-4 text-left">
-                                <h3 class="text-xl font-bold text-white">Goblet Squat</h3>
-                                <span class="text-orange-400 font-bold px-3 py-1 bg-orange-500/10 rounded-lg">4 x 15</span>
-                            </div>
-                            <p class="text-sm text-slate-400 italic">Tek dambılı göğsünde tut ve çömelip kalk.</p>
-                            <button onclick="startTimer(this, 90)" class="w-full mt-6 bg-slate-900 py-4 rounded-xl font-bold hover:bg-orange-600 transition-all">90s Mola</button>
+                        <div class="p-6 text-left">
+                            <h3 class="text-xl font-bold text-white mb-2">Lateral Raise</h3>
+                            <span class="text-orange-400 font-bold px-3 py-1 bg-orange-500/10 rounded-lg text-sm">4 x 15</span>
+                            <button onclick="startTimer(this, 45)" class="w-full mt-4 bg-slate-900 py-4 rounded-xl font-bold hover:bg-orange-600 transition-all">45s Mola</button>
                         </div>
                     </div>
                 </div>
