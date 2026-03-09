@@ -3,126 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dambıl Akademi | Animasyonlu Program</title>
+    <title>Dumbbell Pro | Ev Tipi Antrenman</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Dambıl Hareket Animasyonu */
-        @keyframes workout-lift {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
-        }
-        .animate-lift {
-            animation: workout-lift 2s ease-in-out infinite;
-        }
-        .card:hover .workout-icon {
-            animation-play-state: running;
-        }
-        .workout-icon {
-            animation-play-state: paused; /* Sadece kartın üzerine gelince veya sürekli oynasın mı? Sürekli oynasın dersek bunu kaldırabiliriz. */
-        }
+        @keyframes lift { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        .animate-lift { animation: lift 2s ease-in-out infinite; }
+        .instruction-step { @apply flex items-start gap-2 text-sm text-slate-400 mb-1; }
     </style>
 </head>
-<body class="bg-gray-950 text-gray-200 font-sans">
+<body class="bg-[#0b0f1a] text-slate-200 font-sans selection:bg-blue-500">
 
-    <header class="bg-indigo-900/50 backdrop-blur-md sticky top-0 z-50 py-6 border-b border-indigo-500/30">
-        <div class="max-w-6xl mx-auto px-6 flex justify-between items-center">
-            <h1 class="text-2xl font-black tracking-tighter text-white uppercase italic">Dumbbell <span class="text-indigo-400">Pro</span></h1>
-            <p class="text-sm font-medium text-indigo-300 bg-indigo-500/10 px-4 py-1 rounded-full border border-indigo-500/20">Haftalık Bölgesel Antrenman</p>
+    <nav class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 p-5">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-black text-white italic tracking-tighter uppercase">No-Bench <span class="text-blue-500">Home</span></h1>
+            <div class="text-right flex flex-col items-end">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Süre</span>
+                <span class="text-blue-400 font-mono text-sm">~45 Dakika</span>
+            </div>
         </div>
-    </header>
+    </nav>
 
-    <main class="max-w-6xl mx-auto p-6 space-y-16 mt-8">
+    <main class="max-w-6xl mx-auto p-6 space-y-12">
 
         <section>
-            <div class="flex items-center gap-3 mb-8">
-                <div class="h-10 w-10 bg-red-600 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-red-600/20">01</div>
-                <h2 class="text-3xl font-extrabold tracking-tight">Göğüs & Arka Kol</h2>
+            <div class="flex items-center gap-4 mb-8">
+                <div class="h-12 w-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-900/20 text-xl font-bold italic">1</div>
+                <h2 class="text-3xl font-black text-white">Göğüs & Arka Kol (Yer Odaklı)</h2>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="bg-gray-900 border border-gray-800 p-6 rounded-3xl hover:border-red-500/50 transition-all group card">
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="p-4 bg-gray-800 rounded-2xl group-hover:bg-red-600/10 transition-colors">
-                            <i class="fas fa-dumbbell text-2xl text-red-500 animate-lift workout-icon"></i>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <div class="bg-slate-900 border border-slate-800 rounded-[2.5rem] overflow-hidden hover:border-blue-500/50 transition-all flex flex-col">
+                    <div class="p-8 pb-4 flex justify-between items-start">
+                        <div class="p-5 bg-blue-600/10 rounded-3xl">
+                            <i class="fas fa-dumbbell text-3xl text-blue-500 animate-lift"></i>
                         </div>
                         <div class="text-right">
-                            <span class="block text-2xl font-black text-white">4 Set</span>
-                            <span class="text-red-500 font-bold uppercase text-xs tracking-widest">12 Tekrar</span>
+                            <span class="block text-3xl font-black text-white leading-none">4x12</span>
+                            <span class="text-blue-500 font-bold uppercase text-[10px] tracking-widest">Set & Tekrar</span>
                         </div>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-2">Dumbbell Bench Press</h3>
-                    <p class="text-gray-500 text-sm leading-relaxed">Göğüs hacmi için temel hareket. Ağırlıkları kontrollü indirin.</p>
+                    
+                    <div class="px-8 flex-grow">
+                        <h3 class="text-2xl font-bold text-white mb-4">Floor Press (Yer Press)</h3>
+                        <div class="space-y-3 mb-8">
+                            <p class="text-blue-400 font-semibold text-sm tracking-wide uppercase">Nasıl Yapılır?</p>
+                            <div class="instruction-step"><i class="fas fa-check-circle mt-1 text-blue-500"></i> <p>Yere sırt üstü uzanın, dizlerinizi bükün.</p></div>
+                            <div class="instruction-step"><i class="fas fa-check-circle mt-1 text-blue-500"></i> <p>Dirsekleriniz yere değene kadar dambılları indirin.</p></div>
+                            <div class="instruction-step"><i class="fas fa-check-circle mt-1 text-blue-500"></i> <p>Nefes vererek ağırlıkları yukarı, göğüs hizasına itin.</p></div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-slate-800/50 mt-auto">
+                        <button onclick="startTimer(this, 60)" class="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3">
+                            <i class="fas fa-stopwatch"></i> Molayı Başlat (60s)
+                        </button>
+                    </div>
                 </div>
 
-                <div class="bg-gray-900 border border-gray-800 p-6 rounded-3xl hover:border-red-500/50 transition-all group card">
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="p-4 bg-gray-800 rounded-2xl group-hover:bg-red-600/10">
-                            <i class="fas fa-arrows-left-right text-2xl text-red-500 animate-lift workout-icon"></i>
+                <div class="bg-slate-900 border border-slate-800 rounded-[2.5rem] overflow-hidden hover:border-blue-500/50 transition-all flex flex-col">
+                    <div class="p-8 pb-4 flex justify-between items-start">
+                        <div class="p-5 bg-blue-600/10 rounded-3xl">
+                            <i class="fas fa-arrows-left-right text-3xl text-blue-500 animate-lift"></i>
                         </div>
                         <div class="text-right">
-                            <span class="block text-2xl font-black text-white">3 Set</span>
-                            <span class="text-red-500 font-bold uppercase text-xs tracking-widest">15 Tekrar</span>
+                            <span class="block text-3xl font-black text-white leading-none">3x15</span>
+                            <span class="text-blue-500 font-bold uppercase text-[10px] tracking-widest">Set & Tekrar</span>
                         </div>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-2">Dumbbell Fly</h3>
-                    <p class="text-gray-500 text-sm">Göğüs kaslarını açarak esnetme sağlar. Dirsekleri hafif bükülü tutun.</p>
+                    
+                    <div class="px-8 flex-grow">
+                        <h3 class="text-2xl font-bold text-white mb-4">Floor Fly (Göğüs Açma)</h3>
+                        <div class="space-y-3 mb-8">
+                            <p class="text-blue-400 font-semibold text-sm tracking-wide uppercase">Nasıl Yapılır?</p>
+                            <div class="instruction-step"><i class="fas fa-check-circle mt-1 text-blue-500"></i> <p>Yerde dambılları birbirine paralel, yukarıda tutun.</p></div>
+                            <div class="instruction-step"><i class="fas fa-check-circle mt-1 text-blue-500"></i> <p>Kollarınızı yanlara doğru geniş bir kavisle indirin.</p></div>
+                            <div class="instruction-step"><i class="fas fa-check-circle mt-1 text-blue-500"></i> <p>Üst kol yere dokunduğunda kaslarınızı sıkarak geri kapatın.</p></div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-800/50 mt-auto">
+                        <button onclick="startTimer(this, 45)" class="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3">
+                            <i class="fas fa-stopwatch"></i> Molayı Başlat (45s)
+                        </button>
+                    </div>
                 </div>
+
             </div>
         </section>
 
-        <section>
-            <div class="flex items-center gap-3 mb-8">
-                <div class="h-10 w-10 bg-emerald-600 rounded-lg flex items-center justify-center font-bold text-white">02</div>
-                <h2 class="text-3xl font-extrabold tracking-tight">Sırt & Ön Kol</h2>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="bg-gray-900 border border-gray-800 p-6 rounded-3xl hover:border-emerald-500/50 transition-all group card">
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="p-4 bg-gray-800 rounded-2xl group-hover:bg-emerald-600/10">
-                            <i class="fas fa-arrow-up text-2xl text-emerald-500 animate-lift workout-icon"></i>
-                        </div>
-                        <div class="text-right">
-                            <span class="block text-2xl font-black text-white">4 Set</span>
-                            <span class="text-emerald-500 font-bold uppercase text-xs tracking-widest">10 Tekrar</span>
-                        </div>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2">One Arm Row</h3>
-                    <p class="text-gray-500 text-sm">Sırt genişliği için dambılı kalçanıza doğru çekin.</p>
-                </div>
-
-                <div class="bg-gray-900 border border-gray-800 p-6 rounded-3xl hover:border-emerald-500/50 transition-all group card">
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="p-4 bg-gray-800 rounded-2xl group-hover:bg-emerald-600/10">
-                            <i class="fas fa-hand-fist text-2xl text-emerald-500 animate-lift workout-icon"></i>
-                        </div>
-                        <div class="text-right">
-                            <span class="block text-2xl font-black text-white">3 Set</span>
-                            <span class="text-emerald-500 font-bold uppercase text-xs tracking-widest">12 Tekrar</span>
-                        </div>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2">Hammer Curl</h3>
-                    <p class="text-gray-500 text-sm">Biceps ve ön kolu kalınlaştırır. Dambılları nötr tutun.</p>
-                </div>
-            </div>
-        </section>
-
-        <div class="bg-indigo-900/20 border border-indigo-500/30 p-8 rounded-[2rem] flex flex-col md:flex-row items-center gap-6">
-            <div class="text-4xl text-indigo-400">
-                <i class="fas fa-circle-info"></i>
+        <div class="bg-blue-600/5 border border-blue-500/20 p-6 rounded-3xl flex gap-5 items-center">
+            <div class="h-14 w-14 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-500 text-2xl">
+                <i class="fas fa-house-chimney"></i>
             </div>
             <div>
-                <h4 class="text-xl font-bold text-white">Önemli İpucu</h4>
-                <p class="text-indigo-200/70">Animasyonlardaki ritmi takip etmeye çalışın. Hareketin "iniş" fazını her zaman "kaldırma" fazından biraz daha yavaş yapın (2 saniye kuralı).</p>
+                <p class="font-bold text-white">Neden Sehpa (Bench) Yok?</p>
+                <p class="text-sm text-slate-400">Yerde yapılan hareketler hareket menzilini kısıtlasa da omuz eklemlerini korur ve ev ortamında sakatlık riskini azaltır. Sert bir zemin üzerinde yapmaya özen gösterin.</p>
             </div>
         </div>
 
     </main>
 
-    <footer class="py-12 bg-gray-900 mt-20 text-center border-t border-gray-800">
-        <p class="text-gray-500 text-sm">2026 &copy; <span class="text-gray-300">Dumbbell Pro v2.0</span></p>
+    <footer class="py-12 mt-10 text-center text-slate-600 text-xs border-t border-slate-900">
+        <p>&copy; 2026 Dumbbell Pro - BilgeCaptain Edition</p>
     </footer>
 
+    <script>
+        function startTimer(button, seconds) {
+            if (button.dataset.running === "true") return;
+            const originalText = button.innerHTML;
+            let timeLeft = seconds;
+            button.dataset.running = "true";
+            button.classList.add('bg-blue-600');
+
+            const interval = setInterval(() => {
+                timeLeft--;
+                button.innerHTML = `<i class="fas fa-clock fa-spin"></i> Dinlen: ${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    button.innerHTML = `<i class="fas fa-check"></i> Sıradaki Set!`;
+                    button.classList.replace('bg-blue-600', 'bg-green-600');
+                    button.dataset.running = "false";
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.classList.remove('bg-green-600');
+                    }, 3000);
+                }
+            }, 1000);
+        }
+    </script>
 </body>
 </html>
