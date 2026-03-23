@@ -3,92 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cihaz Tespiti</title>
+    <title>Cihaz Marka & Model Tespiti</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            background: #121212;
-            color: white;
+            background: #0f172a;
+            color: #f8fafc;
         }
-        .container {
+        .card {
             text-align: center;
-            padding: 2rem;
-            border-radius: 20px;
-            background: #1e1e1e;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 1px solid #333;
-            width: 80%;
-            max-width: 400px;
+            padding: 3rem 2rem;
+            border-radius: 24px;
+            background: #1e293b;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            border: 1px solid #334155;
+            width: 90%;
+            max-width: 450px;
         }
-        h1 {
-            font-size: 1.2rem;
-            color: #888;
-            margin-bottom: 0.5rem;
-        }
-        .brand {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #00ff88;
+        .label {
+            font-size: 0.85rem;
+            color: #94a3b8;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
         }
-        .details {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            color: #555;
+        .device-info {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #38bdf8;
+            line-height: 1.2;
+        }
+        .sub-info {
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            color: #64748b;
+            font-family: monospace;
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 8px;
+            word-break: break-all;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Kullandığınız Cihaz</h1>
-        <div id="device-brand" class="brand">Tespit ediliyor...</div>
-        <div class="details" id="user-agent"></div>
+    <div class="card">
+        <div class="label">Tespit Edilen Cihaz</div>
+        <div id="display" class="device-info">Analiz ediliyor...</div>
+        <div class="sub-info" id="raw-ua"></div>
     </div>
 
     <script>
-        function detectDevice() {
+        function getDeviceInfo() {
             const ua = navigator.userAgent;
-            const brandElement = document.getElementById('device-brand');
-            let brand = "Bilinmeyen Cihaz";
+            const display = document.getElementById('display');
+            const rawUa = document.getElementById('raw-ua');
+            
+            let brand = "Bilinmeyen";
+            let model = "";
 
-            // Marka Kontrolleri
+            // Marka ve Model Ayıklama Mantığı
             if (/iPhone|iPad|iPod/i.test(ua)) {
-                brand = "Apple (iPhone/iPad)";
-            } else if (/Samsung|SM-|GT-/i.test(ua)) {
-                brand = "Samsung";
-            } else if (/Huawei|HUAWEI|Honor/i.test(ua)) {
-                brand = "Huawei";
-            } else if (/Xiaomi|Redmi|Mi |POCO/i.test(ua)) {
-                brand = "Xiaomi";
-            } else if (/Oppo|CPH|PCLM/i.test(ua)) {
-                brand = "Oppo";
-            } else if (/Vivo/i.test(ua)) {
-                brand = "Vivo";
-            } else if (/Pixel/i.test(ua)) {
-                brand = "Google Pixel";
-            } else if (/Android/i.test(ua)) {
-                brand = "Android Cihaz";
-            } else if (/Windows/i.test(ua)) {
-                brand = "Bilgisayar (Windows)";
-            } else if (/Macintosh/i.test(ua)) {
-                brand = "Bilgisayar (Mac)";
+                brand = "Apple";
+                // Apple modellerini tarayıcıdan tam olarak çekmek (iPhone 15 vs) 
+                // gizlilik nedeniyle imkansızdır, sadece cihaz tipini verir.
+                model = ua.match(/iPhone|iPad|iPod/i)[0];
+            } 
+            else if (/Android/i.test(ua)) {
+                // Android'de parantez içindeki model kodunu yakalamaya çalışır
+                const match = ua.match(/Android.*;\s([^;]+)\sBuild/i) || ua.match(/Android.*;\s([^;]+);/i);
+                if (match && match[1]) {
+                    model = match[1].trim();
+                }
+
+                if (/Samsung|SM-|GT-/i.test(ua)) brand = "Samsung";
+                else if (/Xiaomi|Redmi|POCO|Mi /i.test(ua)) brand = "Xiaomi";
+                else if (/Huawei|HUAWEI|Honor/i.test(ua)) brand = "Huawei";
+                else if (/Oppo|CPH/i.test(ua)) brand = "Oppo";
+                else if (/Vivo/i.test(ua)) brand = "Vivo";
+                else brand = "Android Cihaz";
+            }
+            else if (/Windows NT/i.test(ua)) {
+                brand = "Windows";
+                model = "PC / Laptop";
+            }
+            else if (/Macintosh/i.test(ua)) {
+                brand = "Apple";
+                model = "Macbook / iMac";
             }
 
-            brandElement.innerText = brand;
-            
-            // Teknik detay meraklıları için küçük not
-            console.log("User Agent:", ua);
+            // Ekrana Yazdır
+            display.innerText = `${brand} ${model}`.trim();
+            rawUa.innerText = "Sistem Verisi: " + ua;
         }
 
-        // Sayfa yüklendiğinde çalıştır
-        window.onload = detectDevice;
+        window.onload = getDeviceInfo;
     </script>
 </body>
 </html>
