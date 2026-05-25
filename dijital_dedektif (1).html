@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAKA #2024-KR-07 | Adli Bilişim Terminali</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --dim: #8b949e;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --cyan: #39c5cf;
+    --font: 'Courier New', 'Lucida Console', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; overflow: hidden; }
+
+  #boot-screen {
+    position: fixed; inset: 0; background: #000; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 9999; padding: 20px;
+  }
+  #boot-screen pre { color: var(--green); font-size: 11px; line-height: 1.4; white-space: pre; }
+  #boot-log { color: var(--dim); font-size: 12px; margin-top: 20px; max-width: 600px; width: 100%; }
+  #boot-log p { margin: 2px 0; }
+  #boot-log p::before { content: '> '; color: var(--green); }
+  #boot-btn { margin-top: 30px; background: none; border: 1px solid var(--green); color: var(--green);
+    font-family: var(--font); font-size: 13px; padding: 10px 30px; cursor: pointer; letter-spacing: 2px; }
+  #boot-btn:hover { background: var(--green); color: #000; }
+
+  #app { display: none; height: 100vh; flex-direction: column; }
+  #app.active { display: flex; }
+
+  #topbar {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 6px 12px; display: flex; align-items: center; gap: 16px; flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  #topbar .logo { color: var(--blue); font-weight: bold; font-size: 12px; letter-spacing: 1px; flex-shrink: 0; }
+  #topbar .vaka { color: var(--dim); font-size: 11px; }
+  #topbar .spacer { flex: 1; }
+  #topbar .timer { color: var(--yellow); font-size: 12px; }
+  #topbar .status { font-size: 11px; color: var(--dim); }
+
+  #main { display: flex; flex: 1; overflow: hidden; }
+
+  #sidebar {
+    width: 220px; min-width: 180px; background: var(--bg2); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+  }
+  #sidebar-header { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--dim); font-size: 11px; letter-spacing: 1px; }
+  #file-tree { flex: 1; overflow-y: auto; padding: 6px 0; }
+  .tree-group { margin-bottom: 4px; }
+  .tree-group-label {
+    padding: 4px 12px; color: var(--dim); font-size: 10px; letter-spacing: 2px;
+    cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px;
+  }
+  .tree-group-label:hover { color: var(--text); }
+  .tree-group-label .arrow { font-size: 8px; transition: transform 0.2s; }
+  .tree-group-label.collapsed .arrow { transform: rotate(-90deg); }
+  .tree-items { }
+  .tree-item {
+    padding: 5px 12px 5px 24px; cursor: pointer; color: var(--text); font-size: 11px;
+    display: flex; align-items: center; gap: 6px; border-left: 2px solid transparent;
+    transition: all 0.15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tree-item:hover { background: var(--bg3); color: var(--blue); }
+  .tree-item.active { background: var(--bg3); border-left-color: var(--blue); color: var(--blue); }
+  .tree-item.locked { color: var(--dim); }
+  .tree-item .icon { font-size: 10px; flex-shrink: 0; }
+  .tree-item .badge { margin-left: auto; font-size: 9px; background: var(--bg3); border: 1px solid var(--border);
+    padding: 1px 4px; border-radius: 2px; color: var(--dim); flex-shrink: 0; }
+  .tree-item.locked .badge { color: var(--yellow); border-color: var(--yellow); }
+  .tree-item.solved .badge { color: var(--green); border-color: var(--green); }
+
+  #content-area {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+  }
+  #tabs-bar {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    display: flex; overflow-x: auto; flex-shrink: 0; min-height: 32px;
+  }
+  .tab {
+    padding: 6px 14px; font-size: 11px; cursor: pointer; white-space: nowrap;
+    border-right: 1px solid var(--border); color: var(--dim); display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0; border-bottom: 2px solid transparent;
+  }
+  .tab:hover { color: var(--text); background: var(--bg3); }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); background: var(--bg); }
+  .tab .close-tab { font-size: 10px; opacity: 0.5; margin-left: 4px; }
+  .tab .close-tab:hover { opacity: 1; color: var(--red); }
+  #no-tabs { padding: 12px; color: var(--dim); font-size: 11px; }
+
+  #file-viewer {
+    flex: 1; overflow-y: auto; padding: 20px; background: var(--bg);
+  }
+  #file-viewer::-webkit-scrollbar { width: 6px; }
+  #file-viewer::-webkit-scrollbar-track { background: var(--bg2); }
+  #file-viewer::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .file-header {
+    border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  }
+  .file-title { color: var(--blue); font-size: 14px; font-weight: bold; }
+  .file-meta { color: var(--dim); font-size: 10px; margin-top: 4px; }
+  .file-content { line-height: 1.8; }
+  .file-content h3 { color: var(--cyan); font-size: 12px; margin: 16px 0 8px; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+  .file-content p { margin: 6px 0; color: var(--text); }
+  .file-content .label { color: var(--dim); }
+  .file-content table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 11px; }
+  .file-content th { color: var(--dim); text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); font-weight: normal; letter-spacing: 1px; font-size: 10px; }
+  .file-content td { padding: 3px 8px; border-bottom: 1px solid #1c2128; color: var(--text); }
+  .file-content tr:hover td { background: var(--bg2); }
+  .file-content .mono { font-family: var(--font); }
+  .file-content pre { background: var(--bg2); border: 1px solid var(--border); padding: 12px; overflow-x: auto; font-size: 11px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+  .file-content .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .file-content .col { flex: 1; min-width: 200px; }
+  .file-content .kv { margin: 4px 0; }
+  .file-content .kv .k { color: var(--dim); }
+  .file-content .kv .v { color: var(--text); }
+  .file-content .section { background: var(--bg2); border: 1px solid var(--border); padding: 12px; margin: 10px 0; }
+  .file-content .note { border-left: 2px solid var(--dim); padding-left: 10px; color: var(--dim); font-size: 11px; margin: 8px 0; }
+
+  .locked-overlay {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 300px; gap: 16px;
+  }
+  .locked-overlay .lock-icon { font-size: 48px; color: var(--dim); }
+  .locked-overlay .lock-title { color: var(--yellow); font-size: 14px; letter-spacing: 2px; }
+  .locked-overlay .lock-desc { color: var(--dim); font-size: 11px; text-align: center; max-width: 400px; line-height: 1.8; }
+  .lock-input-row { display: flex; gap: 8px; align-items: center; }
+  .lock-input {
+    background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--font); font-size: 13px; padding: 8px 12px; outline: none;
+    width: 260px; letter-spacing: 2px;
+  }
+  .lock-input:focus { border-color: var(--blue); }
+  .lock-btn {
+    background: none; border: 1px solid var(--green); color: var(--green);
+    font-family: var(--font); font-size: 12px; padding: 8px 16px; cursor: pointer; letter-spacing: 1px;
+  }
+  .lock-btn:hover { background: var(--green); color: #000; }
+  .lock-error { color: var(--red); font-size: 11px; }
+
+  #notepad {
+    width: 280px; background: var(--bg2); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.2s;
+  }
+  #notepad.collapsed { width: 32px; }
+  #notepad-header {
+    padding: 8px 10px; border-bottom: 1px solid var(--border); display: flex;
+    align-items: center; justify-content: space-between; cursor: pointer; flex-shrink: 0;
+  }
+  #notepad-header .title { color: var(--yellow); font-size: 11px; letter-spacing: 1px; white-space: nowrap; overflow: hidden; }
+  #notepad-header .toggle { color: var(--dim); font-size: 12px; flex-shrink: 0; }
+  #notepad-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  #notepad textarea {
+    flex: 1; background: transparent; border: none; color: var(--text); font-family: var(--font);
+    font-size: 11px; padding: 10px; resize: none; outline: none; line-height: 1.7;
+  }
+  #notepad-footer { padding: 6px 10px; border-top: 1px solid var(--border); color: var(--dim); font-size: 10px; }
+  #notepad.collapsed #notepad-body, #notepad.collapsed #notepad-footer { display: none; }
+  #notepad.collapsed #notepad-header .title { display: none; }
+
+  #statusbar {
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding: 4px 12px; display: flex; gap: 16px; align-items: center; flex-shrink: 0; flex-wrap: wrap;
+  }
+  #statusbar .item { font-size: 10px; color: var(--dim); display: flex; align-items: center; gap: 4px; }
+  #statusbar .item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; }
+  #statusbar .item .dot.yellow { background: var(--yellow); }
+  #statusbar .item .dot.red { background: var(--red); }
+  #progress-bar { flex: 1; height: 3px; background: var(--border); border-radius: 2px; max-width: 120px; }
+  #progress-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.5s; width: 0%; }
+
+  .welcome-screen {
+    padding: 40px; max-width: 700px; margin: 0 auto;
+  }
+  .welcome-screen h1 { color: var(--red); font-size: 18px; letter-spacing: 3px; margin-bottom: 6px; }
+  .welcome-screen h2 { color: var(--dim); font-size: 12px; letter-spacing: 2px; margin-bottom: 30px; font-weight: normal; }
+  .welcome-screen .briefing { background: var(--bg2); border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; line-height: 2; }
+  .welcome-screen .briefing p { margin: 4px 0; }
+  .welcome-screen .briefing .field { display: flex; gap: 12px; }
+  .welcome-screen .briefing .field .lbl { color: var(--dim); min-width: 140px; }
+  .welcome-screen .briefing .field .val { color: var(--text); }
+  .welcome-screen .rule { border-top: 1px solid var(--border); padding-top: 16px; margin-top: 16px; color: var(--dim); font-size: 11px; line-height: 1.8; }
+
+  @media (max-width: 768px) {
+    #sidebar { width: 160px; }
+    #notepad { width: 200px; }
+    .tree-item { font-size: 10px; }
+    #file-viewer { padding: 12px; }
+  }
+  @media (max-width: 580px) {
+    #sidebar { display: none; }
+    #notepad { display: none; }
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div id="boot-screen">
+  <pre>
+  ╔══════════════════════════════════════════════════════════╗
+  ║     ADLİ BİLİŞİM VE DİJİTAL DEDEKTİFLİK SİSTEMİ       ║
+  ║          TÜRK EMNİYET GENEL MÜDÜRLÜĞÜ                   ║
+  ║              Siber Suçlar Birimi — SCU                  ║
+  ╚══════════════════════════════════════════════════════════╝</pre>
+  <div id="boot-log">
+    <p>Sistem başlatılıyor...</p>
+    <p>Şifreli depolama bağlanıyor...</p>
+    <p>Delil veritabanı yükleniyor...</p>
+    <p>Güvenli oturum açılıyor...</p>
+    <p>VAKA #2024-KR-07 dosyaları yüklendi.</p>
+    <p>Uyarı: Bu sistem yalnızca yetkili personel içindir.</p>
+    <p>Tüm işlemler kayıt altına alınmaktadır.</p>
+  </div>
+  <button id="boot-btn" onclick="startGame()">[ OTURUMU BAŞLAT ]</button>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <span class="logo">▐ SCU-TERMİNAL v3.1.4</span>
+    <span class="vaka">VAKA: #2024-KR-07 | KARAHAN, LEYLA</span>
+    <span class="spacer"></span>
+    <span class="timer" id="timer">00:00:00</span>
+    <span class="status">●&nbsp;GÜVENLİ BAĞLANTI</span>
+  </div>
+
+  <div id="main">
+    <div id="sidebar">
+      <div id="sidebar-header">/ DOSYA SİSTEMİ</div>
+      <div id="file-tree"></div>
+    </div>
+
+    <div id="content-area">
+      <div id="tabs-bar">
+        <span id="no-tabs" style="padding:8px 12px;color:var(--dim);font-size:11px;">Dosya seçmek için sol paneli kullanın.</span>
+      </div>
+      <div id="file-viewer">
+        <div class="welcome-screen">
+          <h1>VAKA #2024-KR-07</h1>
+          <h2>LEYLA KARAHAN — ŞÜPHELI ÖLÜM SORUŞTURMASI</h2>
+          <div class="briefing">
+            <div class="field"><span class="lbl">Olay Tarihi:</span><span class="val">14 Ekim 2024, Pazartesi</span></div>
+            <div class="field"><span class="lbl">Bulunan Yer:</span><span class="val">İstanbul, Beşiktaş — Özel Konut</span></div>
+            <div class="field"><span class="lbl">Raporlayan:</span><span class="val">Komşu şikayeti üzerine adres tespiti</span></div>
+            <div class="field"><span class="lbl">Mevcut Durum:</span><span class="val">Soruşturma açık</span></div>
+            <div class="field"><span class="lbl">Yetkili Dedektif:</span><span class="val">Sen</span></div>
+            <div class="field"><span class="lbl">Dosya Güvenlik Sınıfı:</span><span class="val">GİZLİ / SINIRLI ERİŞİM</span></div>
+          </div>
+          <div class="rule">
+            Soldaki dosya ağacından belgelere erişin. Bazı dosyalar şifreli olabilir.<br>
+            Sağ paneli not almak için kullanın. Notlarınız otomatik kaydedilir.<br>
+            Hiçbir sistem size ne yapacağınızı söylemez. Delilleri siz değerlendirirsiniz.<br>
+            Tüm bulgularınızı not defterine yazın. Çapraz referansları siz kurarsınız.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="notepad">
+      <div id="notepad-header" onclick="toggleNotepad()">
+        <span class="title">📝 NOT DEFTERİ</span>
+        <span class="toggle" id="notepad-toggle">◀</span>
+      </div>
+      <div id="notepad-body">
+        <textarea id="notepad-text" placeholder="Bulgularınızı buraya yazın...&#10;&#10;Örnek:&#10;- [Dosya adı] → önemli detay&#10;- Çapraz referans: A + B = ?"></textarea>
+      </div>
+      <div id="notepad-footer" id="notepad-save-status">Otomatik kaydediliyor...</div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="item"><span class="dot"></span> SİSTEM HAZIR</div>
+    <div class="item" id="files-opened">Açılan: 0 dosya</div>
+    <div class="item" id="files-locked">Kilitli: 2 dosya</div>
+    <div class="item">
+      <span>İlerleme:</span>
+      <div id="progress-bar"><div id="progress-fill"></div></div>
+    </div>
+    <div class="item" id="sb-hint">Tüm dosyaları okuyun, çapraz referansları not edin.</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// OYUN VERİSİ
+// ═══════════════════════════════════════════════════════
+const OYUN_VERISI = {
+
+  // ŞİFRELER (lowercase.trim ile karşılaştırılır)
+  // Şifre 1: "3872-214-beşiktaş"
+  //   Parça 1: Foto EXIF → ISO değeri: 3872
+  //   Parça 2: Router log → oturum süresi: 214 (saniye)
+  //   Parça 3: Caner Sabuncu ifadesinde geçen buluşma yeri: beşiktaş
+  // Format: ISO-SURE-YER (oyunda hiçbir yerde yazılmıyor)
+  sifre1: "3872-214-beşiktaş",
+
+  // Şifre 2: "narcis-47-19"
+  //   Parça 1: Şifreli Dosya 1'den öğrenilen kod adı: narcis
+  //   Parça 2: GSM log → iki zaman damgası farkı dk: 47
+  //   Parça 3: Otopsi raporundaki bileşik Lorazepam mol ağırlığı 321.16 → ilk iki hane: 19 (Lorazepam → C15H10Cl2N2O2 → MW=321.16 → ama oyunda "LRZ-19" kodu → oyuncu 19'u alır)
+  // Not: Şifre 2 için → "narcis-47-19"
+  sifre2: "narcis-47-19",
+
+  dosyalar: {
+
+    // ═══ GRUP: OLAY YERİ ═══
+    "olay-yeri-raporu": {
+      baslik: "Olay Yeri İnceleme Raporu",
+      grup: "OLAY YERİ",
+      meta: "Tarih: 14.10.2024 | Savcı: Kaan Erdoğan | Ekip: İstanbul KOM",
+      kilitli: false,
+      icerik: `
+        <h3>GENEL BİLGİLER</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Adres: </span><span class="v">Barbaros Bulvarı No:47 D:12, Beşiktaş / İstanbul</span></div>
+          <div class="kv"><span class="k">Olay Yeri Tipi: </span><span class="v">Zemin kattan 12. kata taşınmış, 3+1 rezidans dairesi</span></div>
+          <div class="kv"><span class="k">İlk Müdahale: </span><span class="v">14.10.2024 — 09:22</span></div>
+          <div class="kv"><span class="k">Ekip Varış: </span><span class="v">14.10.2024 — 10:05</span></div>
+          <div class="kv"><span class="k">Hava Durumu: </span><span class="v">Kapalı, 11°C, rüzgarlı</span></div>
+          <div class="kv"><span class="k">Daire Güvenlik Sistemi: </span><span class="v">ARLO Pro 4 kamera sistemi — son 72 saatte kayıt YOK (kayıt birimi bağlantısız)</span></div>
+        </div>
+
+        <h3>BEDEN KONUMU VE ÇEVRE</h3>
+        <div class="section">
+          <p>Mağdur, çalışma odasında ofis koltuğunda oturur pozisyonda bulunmuştur. Baş sağa doğru hafif eğik, sağ el klavye üzerinde.</p>
+          <p>Monitörde açık uygulama: Terminal emülatörü (bash). Son komut çıktısı ekranda görünmektedir.</p>
+          <p>Masada: Boş su bardağı (×2), kapalı MacBook Pro, harici SSD (etiketsiz), küçük çelik kap (içinde kristal artıklar).</p>
+          <p>Kapı: İçeriden sürgü kilitli değil, dış anahtar kilidi aktif (standart çevrim kolu).</p>
+          <p>Pencereler: Tüm odalar kapalı. Mutfak penceresinde çift taraflı bant izleri (yeni görünümlü).</p>
+        </div>
+
+        <h3>TOPLANAN MATERYALLER</h3>
+        <div class="section">
+          <table>
+            <tr><th>KOD</th><th>MATERYAL</th><th>KONUM</th><th>DURUM</th></tr>
+            <tr><td>E-001</td><td>Küçük çelik kap</td><td>Çalışma masası</td><td>Labaratuara gönderildi</td></tr>
+            <tr><td>E-002</td><td>Su bardağı #1</td><td>Masanın sağı</td><td>Analiz: LB-447</td></tr>
+            <tr><td>E-003</td><td>Su bardağı #2</td><td>Masanın solu</td><td>Analiz: LB-448</td></tr>
+            <tr><td>E-004</td><td>Harici SSD</td><td>Çalışma masası</td><td>Dijital inceleme bekliyor</td></tr>
+            <tr><td>E-005</td><td>Bant izleri (mutfak)</td><td>Mutfak penceresi iç çerçeve</td><td>Fotoğraflandı, numune alındı</td></tr>
+            <tr><td>E-006</td><td>MacBook Pro</td><td>Masa üzeri kapalı</td><td>Şifreli, inceleme bekliyor</td></tr>
+            <tr><td>E-007</td><td>Parmak izi örnekleri</td><td>Kapı kolu, çelik kap</td><td>LB-449</td></tr>
+          </table>
+        </div>
+
+        <h3>ÇEVRE ANALİZİ NOTLARI</h3>
+        <div class="section">
+          <p>Güvenlik kamerası kayıt biriminin güç kablosu, cihazın arkasından çekilmiş durumda. Kablo ucunda hasar yok.</p>
+          <p>Harici SSD üzerinde seri numarası dışında tanımlayıcı etiket bulunmamaktadır. Seri: WD-7741-KR2</p>
+          <p>Çelik kapta kristal artıklar: Renksiz, kokusu yok, nem çekici görünümde.</p>
+          <p>Çalışma odasının kapısı iç tarafında anahtar deliğinde anahtar bulunmamıştır. Anahtarlar çantada.</p>
+          <p>Çantada: Cüzdan, telefon (Samsung Galaxy S23, ekran kırık, kapalı), anahtarlık, reçetesiz ilaç kutusu (boş).</p>
+        </div>
+
+        <h3>KOMŞU İFADESİ (İlk Beyan)</h3>
+        <div class="section">
+          <p>Ad: Sevim Doğan (11. kat, D:10)</p>
+          <p>Beyan: "Cumartesi akşamı üst kattan gürültü geldi, erkek sesi duydum. Pazar sabahı her şey sessizdi. Pazartesi sabahı kapıdan bir koku fark ettim, yöneticiye haber verdim." Tarihler: Cumartesi = 12 Ekim 2024.</p>
+        </div>
+      `
+    },
+
+    "fotograf-exif": {
+      baslik: "Fotoğraf EXIF Meta Verisi",
+      grup: "OLAY YERİ",
+      meta: "Kaynak: E-004 harici SSD | İşlem: Dijital Adli Analiz",
+      kilitli: false,
+      icerik: `
+        <h3>DOSYA LİSTESİ — HARİCİ SSD (WD-7741-KR2)</h3>
+        <div class="section">
+          <p>SSD'de 4 fotoğraf dosyası ve 1 şifreli arşiv bulunmuştur.</p>
+          <p>Şifreli arşiv: <strong>PROJE_SON.zip</strong> — İçerik erişilemiyor.</p>
+        </div>
+
+        <h3>IMG_4471.JPG — EXIF VERİSİ</h3>
+        <div class="section">
+          <div class="row">
+            <div class="col">
+              <div class="kv"><span class="k">Dosya Adı: </span><span class="v">IMG_4471.JPG</span></div>
+              <div class="kv"><span class="k">Dosya Boyutu: </span><span class="v">5.2 MB</span></div>
+              <div class="kv"><span class="k">Boyutlar: </span><span class="v">4032 × 3024 piksel</span></div>
+              <div class="kv"><span class="k">Oluşturma: </span><span class="v">2024:10:11 23:41:08</span></div>
+              <div class="kv"><span class="k">Cihaz: </span><span class="v">Apple iPhone 15 Pro</span></div>
+              <div class="kv"><span class="k">Yazılım: </span><span class="v">iOS 17.6.1</span></div>
+            </div>
+            <div class="col">
+              <div class="kv"><span class="k">Diyafram: </span><span class="v">f/1.78</span></div>
+              <div class="kv"><span class="k">Enstantane: </span><span class="v">1/60 sn</span></div>
+              <div class="kv"><span class="k">ISO: </span><span class="v">3872</span></div>
+              <div class="kv"><span class="k">Odak Uzaklığı: </span><span class="v">24mm</span></div>
+              <div class="kv"><span class="k">GPS Enlem: </span><span class="v">41.0442° K</span></div>
+              <div class="kv"><span class="k">GPS Boylam: </span><span class="v">29.0067° D</span></div>
+            </div>
+          </div>
+          <p style="margin-top:10px;">Fotoğraf içeriği: Açık bir dizüstü bilgisayar ekranı. Ekranda tablo benzeri bir veri görünüyor, içeriği net okunamıyor. Arka planda yarı açık kapı.</p>
+        </div>
+
+        <h3>IMG_4472.JPG — EXIF VERİSİ</h3>
+        <div class="section">
+          <div class="row">
+            <div class="col">
+              <div class="kv"><span class="k">Oluşturma: </span><span class="v">2024:10:11 23:41:52</span></div>
+              <div class="kv"><span class="k">Cihaz: </span><span class="v">Apple iPhone 15 Pro</span></div>
+              <div class="kv"><span class="k">ISO: </span><span class="v">4096</span></div>
+            </div>
+            <div class="col">
+              <div class="kv"><span class="k">GPS Enlem: </span><span class="v">41.0442° K</span></div>
+              <div class="kv"><span class="k">GPS Boylam: </span><span class="v">29.0067° D</span></div>
+            </div>
+          </div>
+          <p style="margin-top:10px;">Fotoğraf içeriği: Aynı odada, farklı açı. Bir yazı tahtasında el yazısıyla formüller.</p>
+        </div>
+
+        <h3>IMG_4473.JPG — EXIF VERİSİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Oluşturma: </span><span class="v">2024:10:12 00:04:17</span></div>
+          <div class="kv"><span class="k">Cihaz: </span><span class="v">Apple iPhone 15 Pro</span></div>
+          <div class="kv"><span class="k">ISO: </span><span class="v">3200</span></div>
+          <div class="kv"><span class="k">GPS: </span><span class="v">Konum verisi yok (GPS devre dışı)</span></div>
+          <p style="margin-top:8px;">Fotoğraf içeriği: Karanlık, belli belirsiz bir dış mekan fotoğrafı. Araç arka lambası ve ıslak zemin görünüyor.</p>
+        </div>
+
+        <h3>IMG_4474.JPG — EXIF VERİSİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Oluşturma: </span><span class="v">2024:10:12 00:04:58</span></div>
+          <div class="kv"><span class="k">Cihaz: </span><span class="v">Samsung Galaxy S22 (farklı cihaz)</span></div>
+          <div class="kv"><span class="k">ISO: </span><span class="v">800</span></div>
+          <div class="kv"><span class="k">GPS: </span><span class="v">41.0438° K, 29.0071° D</span></div>
+          <p style="margin-top:8px;">Fotoğraf içeriği: Bir belge fotoğrafı. Sayılar ve imzalar görünüyor, içerik okunamıyor.</p>
+          <p class="note">Not: Bu fotoğraf farklı bir cihazdan çekilmiş ve SSD'ye kopyalanmış. GPS koordinatları diğer fotoğraflardan ~50m farklı.</p>
+        </div>
+      `
+    },
+
+    "otopsi-raporu": {
+      baslik: "Otopsi ve Toksikoloji Raporu",
+      grup: "OLAY YERİ",
+      meta: "Adli Tıp Kurumu İstanbul | Dosya: ATK-2024-3341 | Dr. Haluk Çetin",
+      kilitli: false,
+      icerik: `
+        <h3>KİŞİSEL BİLGİLER</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Ad Soyad: </span><span class="v">Leyla Karahan</span></div>
+          <div class="kv"><span class="k">Doğum Tarihi: </span><span class="v">17.03.1985</span></div>
+          <div class="kv"><span class="k">Cinsiyet: </span><span class="v">Kadın</span></div>
+          <div class="kv"><span class="k">Boy / Kilo: </span><span class="v">168 cm / 61 kg</span></div>
+          <div class="kv"><span class="k">Tahmini Ölüm Saati: </span><span class="v">12-13 Ekim 2024, 23:00 - 02:00 arası</span></div>
+          <div class="kv"><span class="k">Otopsi Tarihi: </span><span class="v">15.10.2024</span></div>
+        </div>
+
+        <h3>DIŞ MUAYENE</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Genel Görünüm: </span><span class="v">İyi beslenmiş, bakımlı. Rigor mortis: %80. Livor mortis: Oturma pozisyonuyla uyumlu, kısmen sabit.</span></div>
+          <div class="kv"><span class="k">Travma: </span><span class="v">Sol önkolda 4.2 cm uzunluğunda, yüzeysel kesik (derinlik: 2mm). Kanama minimal. Etrafında küçük ekimoz.</span></div>
+          <div class="kv"><span class="k">Ek Bulgular: </span><span class="v">Sağ ön kol iç yüzeyinde 3 adet peteşial hemoraj (1-2mm). Boyun ve göğüste yaygın konjesyon bulguları.</span></div>
+          <div class="kv"><span class="k">Cilt: </span><span class="v">Genellikle sağlıklı görünüm. Siyanoz işaretleri: dudak mukozasında hafif morlaşma.</span></div>
+        </div>
+
+        <h3>İÇ MUAYENE</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Beyin: </span><span class="v">1420 gr, ödematöz, konjesyonlu. Yaygın serebral ödem bulgusu.</span></div>
+          <div class="kv"><span class="k">Akciğerler: </span><span class="v">Sağ: 780 gr, Sol: 710 gr. Diffüz konjesyon. Mikroskopik: alveol boşluklarında köpüklü sıvı.</span></div>
+          <div class="kv"><span class="k">Kalp: </span><span class="v">360 gr, normal sınırlarda. Koroner arterler: patent. Miyokard: makroskopik normal.</span></div>
+          <div class="kv"><span class="k">Karaciğer: </span><span class="v">1640 gr. Periportal fibrozis yok. Yüzeyel konjesyon.</span></div>
+          <div class="kv"><span class="k">Böbrekler: </span><span class="v">Her biri ~130 gr. Korteks soluk, normal histoloji.</span></div>
+          <div class="kv"><span class="k">Mide İçeriği: </span><span class="v">~80 mL sıvı, hafif sarımsı renk. Ek analiz: bkz. toksikoloji.</span></div>
+        </div>
+
+        <h3>TOKSİKOLOJİ — KAN ANALİZİ</h3>
+        <div class="section">
+          <table>
+            <tr><th>BİLEŞİK</th><th>KOD</th><th>SAPTANAN DEĞER</th><th>REFERANS (terapötik aralık)</th><th>BİRİM</th></tr>
+            <tr><td>Lorazepam</td><td>LRZ-19</td><td>0.31</td><td>0.020 – 0.070</td><td>mg/L</td></tr>
+            <tr><td>Alkol (Etanol)</td><td>ETH-01</td><td>0.14</td><td>—</td><td>‰</td></tr>
+            <tr><td>Parasetamol</td><td>PCT-02</td><td>11.4</td><td>10 – 30</td><td>mg/L</td></tr>
+            <tr><td>Kafein</td><td>CAF-03</td><td>4.2</td><td>2 – 10</td><td>mg/L</td></tr>
+            <tr><td>Sertralin</td><td>SRT-04</td><td>&lt;0.01</td><td>0.010 – 0.150</td><td>mg/L</td></tr>
+          </table>
+          <p class="note">Referans aralıkları TIAFT 2022 kılavuzuna göre belirtilmiştir. Yorumlama klinisyen kararına bırakılmıştır.</p>
+        </div>
+
+        <h3>İDRAR ANALİZİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Lorazepam glukuronid: </span><span class="v">Yüksek — kantitatif analiz devam ediyor</span></div>
+          <div class="kv"><span class="k">Diğer benzodiazepinler: </span><span class="v">Saptanmadı</span></div>
+        </div>
+
+        <h3>MİDE İÇERİĞİ ANALİZİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Lorazepam (çözünmüş halde): </span><span class="v">0.84 mg eşdeğeri tespit edildi</span></div>
+          <div class="kv"><span class="k">Ek madde: </span><span class="v">Glisin türevi amino asit bileşiği — miktar: iz düzeyi</span></div>
+          <div class="kv"><span class="k">pH: </span><span class="v">6.1</span></div>
+        </div>
+
+        <h3>ÖN TANIM</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Ön Ölüm Nedeni: </span><span class="v">Merkezi sinir sistemi depresyonu ile uyumlu solunum yetmezliği</span></div>
+          <div class="kv"><span class="k">Ölüm Şekli: </span><span class="v">Soruşturma devam etmektedir. Kesin sınıflandırma ertelendi.</span></div>
+          <div class="kv"><span class="k">Katkıda Bulunan Faktörler: </span><span class="v">Alkol varlığı solunum depresyonunu potansiyelize edebilir.</span></div>
+        </div>
+
+        <h3>Lorazepam Referans Bilgisi</h3>
+        <div class="section">
+          <div class="kv"><span class="k">IUPAC Adı: </span><span class="v">7-chloro-5-(2-chlorophenyl)-1,3-dihydro-2H-1,4-benzodiazepin-2-one</span></div>
+          <div class="kv"><span class="k">Moleküler Formül: </span><span class="v">C15H10Cl2N2O2</span></div>
+          <div class="kv"><span class="k">Moleküler Ağırlık: </span><span class="v">321.16 g/mol</span></div>
+          <div class="kv"><span class="k">CAS No: </span><span class="v">846-49-1</span></div>
+          <div class="kv"><span class="k">Standart Tedavi Aralığı: </span><span class="v">0.020 – 0.070 mg/L (bkz. TIAFT 2022)</span></div>
+        </div>
+      `
+    },
+
+    // ═══ GRUP: ŞÜPHELİ PROFİLLERİ ═══
+    "profil-caner": {
+      baslik: "Şüpheli Profil Dosyası — CS-01",
+      grup: "ŞÜPHELİLER",
+      meta: "Kimlik Doğrulama: MERNİS 14.10.2024 | SCU-KOM",
+      kilitli: false,
+      icerik: `
+        <h3>KİMLİK BİLGİLERİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Ad Soyad: </span><span class="v">Caner Sabuncu</span></div>
+          <div class="kv"><span class="k">Doğum: </span><span class="v">22.07.1982 — İzmir</span></div>
+          <div class="kv"><span class="k">TC Kimlik: </span><span class="v">47***3821</span></div>
+          <div class="kv"><span class="k">Meslek: </span><span class="v">Yazılım Geliştirici / Girişimci</span></div>
+          <div class="kv"><span class="k">İkametgah: </span><span class="v">Maslak, Sarıyer / İstanbul</span></div>
+          <div class="kv"><span class="k">Medeni Durum: </span><span class="v">Bekar</span></div>
+          <div class="kv"><span class="k">Sabıka: </span><span class="v">Ticari uyuşmazlık (2019, sulh ile sonlandı)</span></div>
+        </div>
+
+        <h3>KURBANLA İLİŞKİ</h3>
+        <div class="section">
+          <p>Caner Sabuncu ve Leyla Karahan, 2017-2022 yılları arasında "NexData Analytics" şirketinin ortak kurucularıydı. Şirket 2022'de yüksek değerlemeyle bir yatırım grubuna satıldı. Satış sonrası gelir paylaşımı ve fikri mülkiyet hakları konusunda anlaşmazlık yaşandığı bilinmektedir.</p>
+          <p>Anlaşmazlık 2023'te İstanbul Ticaret Mahkemesine taşındı. Dava 2024 Ağustos'ta Sabuncu aleyhine sonuçlandı. Mahkeme Karahan'a 1.2 milyon TL tazminat ödenmesine hükmetti. Ödeme planı Ekim 2024'te başlayacaktı.</p>
+        </div>
+
+        <h3>İFADE ÖZETİ (14.10.2024)</h3>
+        <div class="section">
+          <p>"Cuma akşamı (11 Ekim) Leyla'yı aradım. Mahkeme kararı hakkında konuşmak istedim. Buluşalım dedim, başta reddetti ama sonra tamam dedi. Beşiktaş'ta bir kafede buluştuk, saat 20:00 civarı. Konuşma gergin geçti ama sakin kaldık. Yaklaşık saat 22:30'da ayrıldım. Eve geldim, yattım. Cumartesi sabahı hiçbir yere çıkmadım."</p>
+          <p>"Aramızdaki hukuki sorun gerçekti ama Leyla'ya hiçbir zaman zarar vermeyi düşünmedim. Mahkeme kararına saygı duyuyorum."</p>
+        </div>
+
+        <h3>BİLİNEN HAREKETLER (10-14 Ekim 2024)</h3>
+        <div class="section">
+          <table>
+            <tr><th>TARİH</th><th>SAAT</th><th>KONUM</th><th>KAYNAK</th></tr>
+            <tr><td>10.10 Per</td><td>09:00–18:00</td><td>Ofis — Maslak TeknoCity</td><td>Bina giriş kartı</td></tr>
+            <tr><td>11.10 Cum</td><td>20:00–22:30</td><td>Beşiktaş (öz beyan)</td><td>Öz beyan</td></tr>
+            <tr><td>12.10 Cmt</td><td>Tüm gün</td><td>Ev — Maslak (öz beyan)</td><td>Öz beyan</td></tr>
+            <tr><td>13.10 Paz</td><td>14:00–18:00</td><td>Göztepe Spor Kulübü</td><td>Üyelik kaydı</td></tr>
+            <tr><td>14.10 Pzt</td><td>07:30–11:00</td><td>Ev / İfade öncesi</td><td>Öz beyan</td></tr>
+          </table>
+        </div>
+
+        <h3>İLETİŞİM KAYITLARI (ÖZET)</h3>
+        <div class="section">
+          <div class="kv"><span class="k">GSM No: </span><span class="v">0532-***-4471</span></div>
+          <div class="kv"><span class="k">Son Arama (kurbanla): </span><span class="v">11.10.2024 — 19:14 (3d 42sn)</span></div>
+          <div class="kv"><span class="k">Son Mesaj (kurbanla): </span><span class="v">11.10.2024 — 19:22 (şifreli uygulama üzerinden — içerik alınamadı)</span></div>
+          <div class="kv"><span class="k">E-posta (hukuki): </span><span class="v">İletişim Eylül-Ekim 2024 arasında aktif</span></div>
+        </div>
+      `
+    },
+
+    "profil-melis": {
+      baslik: "Şüpheli Profil Dosyası — MA-02",
+      grup: "ŞÜPHELİLER",
+      meta: "Kimlik Doğrulama: MERNİS 14.10.2024 | SCU-KOM",
+      kilitli: false,
+      icerik: `
+        <h3>KİMLİK BİLGİLERİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Ad Soyad: </span><span class="v">Melis Alkan</span></div>
+          <div class="kv"><span class="k">Doğum: </span><span class="v">03.04.1979 — Ankara</span></div>
+          <div class="kv"><span class="k">TC Kimlik: </span><span class="v">31***9047</span></div>
+          <div class="kv"><span class="k">Meslek: </span><span class="v">Şirket Genel Müdürü — DataVault A.Ş.</span></div>
+          <div class="kv"><span class="k">İkametgah: </span><span class="v">Nişantaşı, Şişli / İstanbul</span></div>
+          <div class="kv"><span class="k">Medeni Durum: </span><span class="v">Evli, 2 çocuk</span></div>
+          <div class="kv"><span class="k">Sabıka: </span><span class="v">Yok</span></div>
+        </div>
+
+        <h3>KURBANLA İLİŞKİ</h3>
+        <div class="section">
+          <p>Melis Alkan, DataVault A.Ş.'nin genel müdürüdür. DataVault, NexData Analytics'in doğrudan rakibi olup benzer sektöre hizmet vermektedir. İki şirket 2021-2023 arasında devlet ihale süreçlerinde birden fazla kez karşı karşıya gelmiştir.</p>
+          <p>2023'te DataVault, NexData'nın eski bir çalışanını işe almasının ardından Karahan, ticari sır ihlali iddiasıyla hukuki yazışma başlattı. Bu yazışma resmî davaya dönüşmedi ve Ağustos 2024'te iki taraf yazılı bir mutabakat imzaladı.</p>
+          <p>Mutabakatın içeriği kamuya açıklanmadı.</p>
+        </div>
+
+        <h3>İFADE ÖZETİ (15.10.2024)</h3>
+        <div class="section">
+          <p>"Leyla Karahan'la son görüşmemiz Ağustos mutabakatında yapılan toplantıydı. Ondan sonra ne aradım ne de görüştüm. Ticari anlaşmazlığımızı çözdük. Ekim ayının 11 ve 12'sinde Ankara'daydım, yönetim kurulu toplantıları vardı."</p>
+          <p>"DataVault ile Karahan'ın şirketinin rekabeti sektörün doğası gereği. Kişisel bir düşmanlık hiçbir zaman olmadı. Ticaret bu."</p>
+        </div>
+
+        <h3>BİLİNEN HAREKETLER (10-14 Ekim 2024)</h3>
+        <div class="section">
+          <table>
+            <tr><th>TARİH</th><th>SAAT</th><th>KONUM</th><th>KAYNAK</th></tr>
+            <tr><td>10.10 Per</td><td>Tüm gün</td><td>İstanbul — DataVault ofis</td><td>Şirket kayıtları</td></tr>
+            <tr><td>11.10 Cum</td><td>14:30–</td><td>Ankara — YK toplantısı</td><td>Otel check-in kaydı</td></tr>
+            <tr><td>12.10 Cmt</td><td>Tüm gün</td><td>Ankara — devam</td><td>Otel fişi</td></tr>
+            <tr><td>13.10 Paz</td><td>18:00</td><td>İstanbul'a dönüş</td><td>THY uçuş kaydı AY-2241</td></tr>
+            <tr><td>14.10 Pzt</td><td>09:00–</td><td>İstanbul — DataVault ofis</td><td>Bina kayıtları</td></tr>
+          </table>
+        </div>
+
+        <h3>KURUMSAL BİLGİ — DataVault A.Ş.</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Vergi No: </span><span class="v">4710084721</span></div>
+          <div class="kv"><span class="k">Adres: </span><span class="v">Levent, Beşiktaş / İstanbul</span></div>
+          <div class="kv"><span class="k">IP Bloğu (kayıtlı): </span><span class="v">188.40.112.0/24 (Hetzner üzerinden)</span></div>
+          <div class="kv"><span class="k">VPN Sağlayıcı: </span><span class="v">ProtonVPN kurumsal lisans</span></div>
+        </div>
+      `
+    },
+
+    "profil-burak": {
+      baslik: "Şüpheli Profil Dosyası — BK-03",
+      grup: "ŞÜPHELİLER",
+      meta: "Kimlik Doğrulama: MERNİS 14.10.2024 | SCU-KOM",
+      kilitli: false,
+      icerik: `
+        <h3>KİMLİK BİLGİLERİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Ad Soyad: </span><span class="v">Burak Karahan</span></div>
+          <div class="kv"><span class="k">Doğum: </span><span class="v">08.11.1983 — İstanbul</span></div>
+          <div class="kv"><span class="k">TC Kimlik: </span><span class="v">55***1188</span></div>
+          <div class="kv"><span class="k">Meslek: </span><span class="v">Mimar (serbest)</span></div>
+          <div class="kv"><span class="k">İkametgah: </span><span class="v">Moda, Kadıköy / İstanbul</span></div>
+          <div class="kv"><span class="k">Medeni Durum: </span><span class="v">Boşanmış (kurbanla — resmi tarih: Mart 2023)</span></div>
+          <div class="kv"><span class="k">Sabıka: </span><span class="v">Yok</span></div>
+        </div>
+
+        <h3>KURBANLA İLİŞKİ</h3>
+        <div class="section">
+          <p>Burak Karahan, mağdurun eski eşidir. Evlilik 2018-2023 yılları arasında sürmüştür. Boşanma anlaşmazlıksız, karşılıklı rıza ile gerçekleşmiştir. Müşterek çocukları yoktur.</p>
+          <p>Boşanma sonrası iletişimleri devam etmiş; Burak Karahan'ın beyanına göre "dostane bir ilişki" sürdürmüşlerdir. Karahan, mağdurun özel anahtarını elinde bulundurduğunu ve zaman zaman sulama ve benzeri işler için daireye girdiğini beyan etmiştir.</p>
+        </div>
+
+        <h3>İFADE ÖZETİ (14.10.2024)</h3>
+        <div class="section">
+          <p>"Cumartesi sabahı (12 Ekim) Leyla'yı aradım, açmadı. Öğleden sonra da denedim, yine açmadı. Pazar günü kapısına gittim, zil çaldım cevap vermedi. Kötü hissettim ama zorlamadım. 'Belki bir yere gitmiştir' dedim."</p>
+          <p>"Ben Leyla'yı hâlâ seviyorum. Bu yüzden her şeyi şeffaf anlatıyorum. Pazartesi sabahı komşulardan haber geldi. Onu son gördüğüm Ekim başında bir kahve içtiğimizde."</p>
+          <p>"Cumartesi öğleden sonra 14:00-17:00 arası Kadıköy'de bir mimarlık ofisindeyim. Sonra eve döndüm. Cumartesi gecesi hiçbir yere gitmedim. Dairesine gitmek aklımdan geçti ama gitmedim, hakkı yoktu."</p>
+        </div>
+
+        <h3>BİLİNEN HAREKETLER (10-14 Ekim 2024)</h3>
+        <div class="section">
+          <table>
+            <tr><th>TARİH</th><th>SAAT</th><th>KONUM</th><th>KAYNAK</th></tr>
+            <tr><td>10.10 Per</td><td>Tüm gün</td><td>Ofis — Kadıköy</td><td>Proje dosyaları</td></tr>
+            <tr><td>11.10 Cum</td><td>Gün boyu</td><td>Ev — Moda (öz beyan)</td><td>Öz beyan</td></tr>
+            <tr><td>12.10 Cmt</td><td>14:00–17:00</td><td>Mimarlık ofisi — Kadıköy</td><td>İş arkadaşı teyidi</td></tr>
+            <tr><td>12.10 Cmt</td><td>17:00–</td><td>Ev — Moda (öz beyan)</td><td>Öz beyan</td></tr>
+            <tr><td>13.10 Paz</td><td>Öğleden sonra</td><td>Beşiktaş yönü (öz beyan)</td><td>Öz beyan</td></tr>
+            <tr><td>14.10 Pzt</td><td>Sabah</td><td>İfadeye geldi</td><td>Karakol kaydı</td></tr>
+          </table>
+          <p class="note">Not: Burak Karahan'ın Pazar günü Beşiktaş yönüne gittiğini beyan etmesi fakat geri dönüp gittiğini söylemesi doğrulanmamıştır.</p>
+        </div>
+
+        <h3>EK BİLGİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Mağdurun dairesine erişim: </span><span class="v">Fiziksel anahtar mevcut (boşanma sonrası iade edilmemiş)</span></div>
+          <div class="kv"><span class="k">Son finansal işlem (kurbanla ilgili): </span><span class="v">Ortak banka hesabı Mart 2023'te kapatıldı</span></div>
+          <div class="kv"><span class="k">Ek not: </span><span class="v">Leyla Karahan'ın avukatı, Eylül 2024'te anahtarın iade edilmesi için yazılı talepte bulunmuş, yanıt gelmemiş.</span></div>
+        </div>
+      `
+    },
+
+    "profil-umut": {
+      baslik: "Şüpheli Profil Dosyası — UO-04",
+      grup: "ŞÜPHELİLER",
+      meta: "Kimlik Doğrulama: MERNİS 14.10.2024 | SCU-KOM",
+      kilitli: false,
+      icerik: `
+        <h3>KİMLİK BİLGİLERİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Ad Soyad: </span><span class="v">Umut Özdemir</span></div>
+          <div class="kv"><span class="k">Doğum: </span><span class="v">14.09.1991 — Konya</span></div>
+          <div class="kv"><span class="k">TC Kimlik: </span><span class="v">29***7734</span></div>
+          <div class="kv"><span class="k">Meslek: </span><span class="v">Yazılım Mühendisi (kayıp)</span></div>
+          <div class="kv"><span class="k">Son Bilinen İkametgah: </span><span class="v">Ataşehir / İstanbul (boşaltılmış)</span></div>
+          <div class="kv"><span class="k">Medeni Durum: </span><span class="v">Bekar</span></div>
+          <div class="kv"><span class="k">Sabıka: </span><span class="v">Yok</span></div>
+          <div class="kv"><span class="k">Kayıp İhbarı: </span><span class="v">07.10.2024 — ailesi tarafından yapıldı</span></div>
+        </div>
+
+        <h3>KURBANLA İLİŞKİ</h3>
+        <div class="section">
+          <p>Umut Özdemir, 2021-2024 arasında Leyla Karahan'ın kurucusu olduğu NexData şirketinin ardından kurduğu yeni girişimde yazılım geliştirici olarak çalışmıştır. İş ilişkisi Eylül 2024'te aniden kesilmiştir.</p>
+          <p>İşten ayrılış nedeni: Özdemir, son projeye ait kaynak kodlarını kişisel cihazına kopyaladığı iddiasıyla ilgili soruşturmaya dahil edilmiştir. Karahan, resmi şikayet yoluna gitmemiş, iş ilişkisini sonlandırmıştır.</p>
+          <p>Özdemir, 4 Ekim 2024'ten bu yana sosyal medya hesapları dahil hiçbir dijital platformda aktif değildir. Cep telefonu kapalı veya erişimsiz.</p>
+        </div>
+
+        <h3>İFADE</h3>
+        <div class="section">
+          <p>Umut Özdemir'e ulaşılamamıştır. İfade alınamamıştır.</p>
+          <p>Anne beyanı (Hatice Özdemir, 07.10.2024): "Oğlum son olarak 3 Ekim'de telefon açtı. Biraz gergin sesli idi. 'Bir süre sessiz kalacağım, merak etme' dedi. Adres bırakmadı."</p>
+        </div>
+
+        <h3>BİLİNEN HAREKETLER (Son Hafta)</h3>
+        <div class="section">
+          <table>
+            <tr><th>TARİH</th><th>DURUM</th><th>KAYNAK</th></tr>
+            <tr><td>03.10.2024</td><td>Son telefon görüşmesi (aile)</td><td>Telekom kaydı</td></tr>
+            <tr><td>04.10.2024</td><td>Son ATM işlemi — Ataşehir</td><td>Banka kaydı</td></tr>
+            <tr><td>05.10.2024</td><td>Ev boşaltıldı (ev sahibi beyanı)</td><td>Ev sahibi ifadesi</td></tr>
+            <tr><td>06.10.2024</td><td>Son çevrimiçi aktivite (VPN üzerinden)</td><td>ISP kaydı</td></tr>
+          </table>
+        </div>
+
+        <h3>DİJİTAL AYAK İZİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Son kullanılan IP: </span><span class="v">185.220.101.47 (Tor çıkış düğümü)</span></div>
+          <div class="kv"><span class="k">Son e-posta: </span><span class="v">umut.ozdemir.dev@proton.me (hesap erişilemez)</span></div>
+          <div class="kv"><span class="k">GitHub (kamuya açık): </span><span class="v">Son commit: 02.10.2024</span></div>
+          <div class="kv"><span class="k">LinkedIn: </span><span class="v">Hesap silinmiş</span></div>
+        </div>
+      `
+    },
+
+    // ═══ GRUP: DİJİTAL KAYITLAR ═══
+    "router-log": {
+      baslik: "Router Erişim Günlüğü — Konut Ağı",
+      grup: "DİJİTAL KAYITLAR",
+      meta: "Kaynak: ASUS RT-AX88U | MAC: B4:FB:E4:1C:2A:77 | Çıkarım: 14.10.2024",
+      kilitli: false,
+      icerik: `
+        <h3>CİHAZ BİLGİSİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Model: </span><span class="v">ASUS RT-AX88U</span></div>
+          <div class="kv"><span class="k">Firmware: </span><span class="v">3.0.0.4.388_23285</span></div>
+          <div class="kv"><span class="k">Dış IP: </span><span class="v">88.247.104.231 (Türk Telekom — sabit)</span></div>
+          <div class="kv"><span class="k">Log Dönemi: </span><span class="v">10.10.2024 — 14.10.2024</span></div>
+        </div>
+
+        <h3>BAĞLANAN CİHAZLAR</h3>
+        <div class="section">
+          <table>
+            <tr><th>MAC ADRESİ</th><th>CİHAZ ADI</th><th>SON GÖRÜLME</th></tr>
+            <tr><td>A8:86:DD:14:C2:91</td><td>Leyla-MacBook</td><td>13.10.2024 22:47</td></tr>
+            <tr><td>C4:67:B5:9A:11:EE</td><td>Samsung-Galaxy-S23</td><td>13.10.2024 22:51</td></tr>
+            <tr><td>3C:22:FB:7D:A3:01</td><td>UNKNOWN_DEVICE</td><td>12.10.2024 01:09</td></tr>
+            <tr><td>D8:BB:C1:45:FF:22</td><td>AppleTV</td><td>13.10.2024 20:11</td></tr>
+          </table>
+        </div>
+
+        <h3>OTURUM KAYITLARI — 11-12 EKİM (Seçili)</h3>
+        <div class="section">
+          <pre>
+2024-10-11 19:58:04 | DHCP_LEASE  | MAC=A8:86:DD:14:C2:91 | IP=192.168.1.2   | Leyla-MacBook
+2024-10-11 20:01:17 | HTTP_REQ    | SRC=192.168.1.2  | DST=185.199.108.153 | PORT=443 | github.com
+2024-10-11 20:14:33 | HTTP_REQ    | SRC=192.168.1.2  | DST=172.217.17.46   | PORT=443 | google.com
+2024-10-11 20:22:49 | HTTP_REQ    | SRC=192.168.1.2  | DST=104.16.249.249  | PORT=443 | protonmail.com
+2024-10-11 20:31:02 | VPN_TUNNEL  | SRC=192.168.1.2  | DST=185.107.80.140  | PROTO=UDP | DURATION=214s
+2024-10-11 20:34:36 | DHCP_EXPIRE | MAC=A8:86:DD:14:C2:91
+2024-10-11 20:36:11 | HTTP_REQ    | SRC=192.168.1.2  | DST=185.107.80.140  | PORT=51820 | WireGuard
+2024-10-11 21:04:58 | HTTP_REQ    | SRC=192.168.1.2  | DST=88.99.162.47    | PORT=443 | cloud.dropbox.com
+2024-10-11 21:17:22 | HTTP_REQ    | SRC=192.168.1.2  | DST=188.40.114.28   | PORT=443 | [çözümlenmedi]
+2024-10-11 21:44:09 | HTTP_REQ    | SRC=192.168.1.2  | DST=188.40.114.28   | PORT=443 | [çözümlenmedi]
+2024-10-11 22:01:14 | HTTP_REQ    | SRC=192.168.1.2  | DST=188.40.112.88   | PORT=443 | [çözümlenmedi]
+2024-10-11 22:19:33 | DISCONNECT  | MAC=A8:86:DD:14:C2:91
+2024-10-12 00:47:11 | DHCP_LEASE  | MAC=3C:22:FB:7D:A3:01 | IP=192.168.1.7   | UNKNOWN_DEVICE
+2024-10-12 00:47:38 | HTTP_REQ    | SRC=192.168.1.7  | DST=8.8.8.8          | PORT=53  | DNS
+2024-10-12 00:48:02 | HTTP_REQ    | SRC=192.168.1.7  | DST=185.220.101.47   | PORT=443 | [Tor ağı]
+2024-10-12 01:09:44 | DISCONNECT  | MAC=3C:22:FB:7D:A3:01
+          </pre>
+        </div>
+
+        <h3>OTURUM KAYITLARI — 12-13 EKİM (Seçili)</h3>
+        <div class="section">
+          <pre>
+2024-10-12 09:14:22 | DHCP_LEASE  | MAC=A8:86:DD:14:C2:91 | IP=192.168.1.2   | Leyla-MacBook
+2024-10-12 09:16:44 | HTTP_REQ    | SRC=192.168.1.2  | DST=172.217.17.46   | PORT=443 | google.com
+2024-10-12 09:41:07 | HTTP_REQ    | SRC=192.168.1.2  | DST=140.82.114.4    | PORT=443 | github.com
+2024-10-12 11:22:19 | HTTP_REQ    | SRC=192.168.1.2  | DST=188.40.114.28   | PORT=443 | [çözümlenmedi]
+2024-10-12 22:14:47 | HTTP_REQ    | SRC=192.168.1.2  | DST=185.199.108.153 | PORT=443 | github.com
+2024-10-12 22:47:33 | DISCONNECT  | MAC=A8:86:DD:14:C2:91
+2024-10-13 07:22:18 | DHCP_LEASE  | MAC=A8:86:DD:14:C2:91 | IP=192.168.1.2   | Leyla-MacBook
+2024-10-13 20:11:04 | HTTP_REQ    | SRC=192.168.1.5  | DST=17.129.92.1     | PORT=443 | apple.com (AppleTV)
+2024-10-13 22:47:01 | DISCONNECT  | MAC=A8:86:DD:14:C2:91
+2024-10-13 22:51:09 | DISCONNECT  | MAC=C4:67:B5:9A:11:EE
+          </pre>
+        </div>
+
+        <h3>NOT</h3>
+        <div class="section">
+          <p class="note">188.40.112.0/24 ve 188.40.114.x bloğu: İkisi de Hetzner Online GmbH altyapısındadır. Farklı müşteri segmentleri olabilir. Detay için WHOIS sorgusuna bakınız.</p>
+        </div>
+      `
+    },
+
+    "gsm-log": {
+      baslik: "GSM Operatör Konum Kaydı",
+      grup: "DİJİTAL KAYITLAR",
+      meta: "Operatör: Türkcell | Talep No: SCU-2024-GSM-0441 | HAM VERİ",
+      kilitli: false,
+      icerik: `
+        <h3>KAYIT BİLGİSİ</h3>
+        <div class="section">
+          <div class="kv"><span class="k">Abone: </span><span class="v">Karahan, Leyla — 0532-***-7710</span></div>
+          <div class="kv"><span class="k">Dönem: </span><span class="v">10.10.2024 — 13.10.2024</span></div>
+          <div class="kv"><span class="k">Format: </span><span class="v">Tarih | Saat | BTS Kodu | Koordinat | Bağlantı Tipi</span></div>
+        </div>
+
+        <h3>ABONE: LEYLA KARAHAN</h3>
+        <div class="section">
+          <pre>
+2024-10-11 | 19:08:12 | BTS-IST-341 | 41.0441,29.0065 | 4G_IDLE
+2024-10-11 | 19:14:07 | BTS-IST-341 | 41.0441,29.0065 | 4G_VOICE (gelen: 0532-***-4471, 3d42s)
+2024-10-11 | 20:44:31 | BTS-IST-341 | 41.0441,29.0065 | 4G_IDLE
+2024-10-11 | 22:03:18 | BTS-IST-341 | 41.0441,29.0065 | 4G_DATA
+2024-10-11 | 22:19:44 | BTS-IST-341 | 41.0441,29.0065 | 4G_IDLE
+2024-10-12 | 00:31:07 | BTS-IST-341 | 41.0441,29.0065 | 4G_DATA
+2024-10-12 | 01:14:22 | BTS-IST-341 | 41.0441,29.0065 | 4G_IDLE
+2024-10-12 | 09:04:19 | BTS-IST-341 | 41.0441,29.0065 | 4G_DATA
+2024-10-12 | 11:17:53 | BTS-IST-341 | 41.0441,29.0065 | 4G_DATA
+2024-10-12 | 22:48:01 | BTS-IST-341 | 41.0441,29.0065 | 4G_IDLE
+2024-10-13 | 07:19:04 | BTS-IST-341 | 41.0441,29.0065 | 4G_DATA
+2024-10-13 | 22:51:03 | BTS-IST-341 | 41.0441,29.0065 | 4G_IDLE
+          </pre>
+          <p class="note">BTS-IST-341: Barbaros Bulvarı baz istasyonu, kapsama alanı ~300m yarıçap.</p>
+        </div>
+
+        <h3>ABONE: CANER SABUNCU — 0532-***-4471</h3>
+        <div class="section">
+          <pre>
+2024-10-11 | 14:02:17 | BTS-IST-209 | 41.1076,29.0258 | 4G_IDLE  (Maslak)
+2024-10-11 | 19:11:04 | BTS-IST-209 | 41.1076,29.0258 | 4G_VOICE (giden: 0532-***-7710, 3d42s)
+2024-10-11 | 19:58:41 | BTS-IST-338 | 41.0438,29.0068 | 4G_IDLE  (Beşiktaş merkez)
+2024-10-11 | 22:31:14 | BTS-IST-338 | 41.0438,29.0068 | 4G_IDLE
+2024-10-11 | 22:33:02 | BTS-IST-209 | 41.1076,29.0258 | 4G_IDLE  (Maslak — dönüş)
+2024-10-12 | 01:02:18 | BTS-IST-209 | 41.1076,29.0258 | 4G_IDLE
+2024-10-12 | 07:14:33 | BTS-IST-209 | 41.1076,29.0258 | 4G_IDLE
+2024-10-13 | 14:01:09 | BTS-IST-477 | 41.0071,29.0339 | 4G_IDLE  (Göztepe)
+2024-10-13 | 18:02:44 | BTS-IST-209 | 41.1076,29.0258 | 4G_IDLE
+          </pre>
+        </div>
+
+        <h3>ABONE: BURAK KARAHAN — 0536-***-2281</h3>
+        <div class="section">
+          <pre>
+2024-10-11 | 08:14:22 | BTS-IST-504 | 40.9919,29.0247 | 4G_IDLE  (Moda/Kadıköy)
+2024-10-11 | 09:01:17 | BTS-IST-504 | 40.9919,29.0247 | 4G_IDLE
+2024-10-11 | 22:44:07 | BTS-IST-504 | 40.9919,29.0247 | 4G_IDLE
+2024-10-12 | 00:04:31 | BTS-IST-338 | 41.0438,29.0068 | 4G_DATA  (Beşiktaş merkez)
+2024-10-12 | 00:51:14 | BTS-IST-338 | 41.0438,29.0068 | 4G_IDLE
+2024-10-12 | 00:51:29 | BTS-IST-504 | 40.9919,29.0247 | 4G_IDLE  (Moda — dönüş)
+2024-10-12 | 14:11:04 | BTS-IST-504 | 40.9919,29.0247 | 4G_IDLE
+2024-10-12 | 17:04:22 | BTS-IST-504 | 40.9919,29.0247 | 4G_IDLE
+2024-10-13 | 10:04:17 | BTS-IST-504 | 40.9919,29.0247 | 4G_IDLE
+2024-10-13 | 14:09:18 | BTS-IST-338 | 41.0438,29.0068 | 4G_IDLE  (Beşiktaş)
+2024-10-13 | 15:01:44 | BTS-IST-504 | 40.9919,29.0247 | 4G_IDLE
+          </pre>
+          <p class="note">BTS-IST-338 kapsama alanı, kurbanın adresinden ~120m mesafedeki baz istasyonunu kapsar.</p>
+        </div>
+      `
+    },
+
+    "whois-sorgulama": {
+      baslik: "WHOIS / ARIN IP Kayıt Sorgulama",
+      grup: "DİJİTAL KAYITLAR",
+      meta: "Sistem: RIPE NCC & ARIN Veritabanı Simülasyonu | Güncelleme: 01.10.2024",
+      kilitli: false,
+      icerik: `
+        <h3>SORGU: 188.40.114.28</h3>
+        <div class="section">
+          <pre>
+% RIPE Database query results
+inetnum:     188.40.112.0 - 188.40.127.255
+netname:     HETZNER-RZ-FKS-NET
+descr:       Hetzner Online GmbH
+country:     DE
+admin-c:     HOAC1-RIPE
+tech-c:      HOAC1-RIPE
+status:      ASSIGNED PA
+mnt-by:      HOS-GUN
+created:     2009-07-24T08:00:00Z
+remarks:     Customer IP allocation — shared infrastructure
+remarks:     Individual customer assignments available via abuse-c contact
+
+% Customer assignment for 188.40.114.0/27:
+Customer:    PROTONVPN-EXIT-TR-IST-04
+Allocated:   2023-11-08
+Usage:       VPN Exit Node — Istanbul (Turkey)
+Shared:      YES — multiple customers share this exit IP
+          </pre>
+        </div>
+
+        <h3>SORGU: 188.40.112.88</h3>
+        <div class="section">
+          <pre>
+% RIPE Database query results
+inetnum:     188.40.112.64 - 188.40.112.95
+netname:     HETZNER-CUST-DV447
+descr:       Hetzner Online GmbH — Customer allocation
+country:     DE
+remarks:     Dedicated server allocation
+
+% Reverse DNS:
+host:        188.40.112.88
+PTR record:  srv-88.datavault-cdn.com
+          </pre>
+          <p class="note">datavault-cdn.com: DataVault A.Ş.'nin CDN altyapısı. Tescil: 2022-03-14, Registrant: DataVault Teknoloji A.Ş.</p>
+        </div>
+
+        <h3>SORGU: 185.220.101.47</h3>
+        <div class="section">
+          <pre>
+% RIPE Database query results
+inetnum:     185.220.101.0 - 185.220.101.255
+netname:     TOR-EXIT-NODE
+descr:       Tor Project exit relay
+country:     DE
+remarks:     This IP is a Tor exit node. Traffic from this IP may
+             originate from any Tor user worldwide.
+remarks:     Abuse contact: tor-admin@torproject.org
+          </pre>
+        </div>
+
+        <h3>ÖZET ANALİZ NOTU</h3>
+        <div class="section">
+          <p class="note">188.40.114.x adresi ProtonVPN paylaşımlı çıkış düğümüdür. Bu adresi kullanan trafik DataVault'a değil, ProtonVPN'in herhangi bir kullanıcısına ait olabilir.</p>
+          <p class="note">188.40.112.88 adresinin PTR kaydı DataVault CDN sunucusunu işaret etmektedir.</p>
+        </div>
+      `
+    },
+
+    // ═══ GRUP: KİLİTLİ DOSYALAR ═══
+    "sifre-1": {
+      baslik: "[KİLİTLİ] Şifreli Proje Dosyası — Alfa",
+      grup: "KİLİTLİ DOSYALAR",
+      meta: "Erişim: Kısıtlı | Güvenlik Sınıfı: SCU-KIRMIZI",
+      kilitli: true,
+      sifre: "3872-214-beşiktaş",
+      icerik: `
+        <h3>PROJE NARCIS — ÖZET DOSYASI</h3>
+        <div class="section">
+          <p>Bu dosya, Leyla Karahan'ın kişisel NAS cihazından kurtarılan ve "NARCIS" kod adıyla şifrelenen projenin özetidir.</p>
+          <div class="kv"><span class="k">Proje Kod Adı: </span><span class="v">NARCIS</span></div>
+          <div class="kv"><span class="k">Proje Tipi: </span><span class="v">Özel müşteri veri işleme yazılımı</span></div>
+          <div class="kv"><span class="k">Müşteri: </span><span class="v">[REDACTED — Hukuki Koruma]</span></div>
+          <div class="kv"><span class="k">Proje Başlangıç: </span><span class="v">Mart 2024</span></div>
+          <div class="kv"><span class="k">Son Güncelleme: </span><span class="v">09.10.2024</span></div>
+        </div>
+
+        <h3>İÇ YAZIŞMA — 24.09.2024</h3>
+        <div class="section">
+          <pre>
+Gönderen: leyla.karahan@nexdata.dev
+Alıcı: umut.ozdemir.dev@proton.me
+Konu: NARCIS v2 — kritik
+
+Umut,
+
+Kodun son versiyonunu aldım. Bir şeylerin yanlış gittiğini
+fark ettim. Müşteri verisi üretim ortamına sızdırılmış.
+Tesadüf değil bu.
+
+Kimin yaptığını biliyorum. Seninle konuşmam gerek.
+Yarın ofiste misin?
+
+L.
+          </pre>
+        </div>
+
+        <h3>İÇ YAZIŞMA — 25.09.2024</h3>
+        <div class="section">
+          <pre>
+Gönderen: umut.ozdemir.dev@proton.me
+Alıcı: leyla.karahan@nexdata.dev
+Konu: Re: NARCIS v2 — kritik
+
+Leyla,
+
+Yarın olamam. Hafta sonu konuşalım.
+Merak etme, kontrol altında.
+
+U.
+          </pre>
+        </div>
+
+        <h3>PROJE NOTLARI (Elle Yazılmış — Dijitalleştirilmiş)</h3>
+        <div class="section">
+          <p>"NARCIS müşteri: birden fazla taraf ilgili. Caner biliyor mu? Kontrol etmem lazım. Umut'un erişim logları — kimin için çalışıyor?"</p>
+          <p>"Eğer C. bunu müşteriye sattıysa mahkeme kararı hiçbir şeyi değiştirmez. Daha büyük sorun."</p>
+          <p>"Dosyaları güvende tutmam gerek. Şifreleme seviyesini artır."</p>
+        </div>
+
+        <h3>PROJE KATILIMCILARI (Kayıtlı)</h3>
+        <div class="section">
+          <table>
+            <tr><th>İSİM</th><th>ROL</th><th>ERİŞİM SEVİYESİ</th><th>SON AKTİVİTE</th></tr>
+            <tr><td>L. Karahan</td><td>Proje Yöneticisi</td><td>TAM</td><td>09.10.2024</td></tr>
+            <tr><td>U. Özdemir</td><td>Baş Geliştirici</td><td>TAM</td><td>02.10.2024</td></tr>
+            <tr><td>[REDACTED]</td><td>Müşteri İrtibat</td><td>OKUMA</td><td>07.10.2024</td></tr>
+          </table>
+        </div>
+      `
+    },
+
+    "sifre-2": {
+      baslik: "[KİLİTLİ] Yazışma Arşivi — Beta",
+      grup: "KİLİTLİ DOSYALAR",
+      meta: "Erişim: Kısıtlı | Güvenlik Sınıfı: SCU-KIRMIZI",
+      kilitli: true,
+      sifre: "narcis-47-19",
+      icerik: `
+        <h3>YAZIŞMA ARŞİVİ — EKİM 2024</h3>
+        <div class="section">
+          <p>Bu arşiv, Leyla Karahan'ın şifreli mesajlaşma uygulaması yedeklerinden kurtarılmıştır.</p>
+        </div>
+
+        <h3>SİGNAL MESAJLARI — CANER SABUNCU İLE (Kısmi)</h3>
+        <div class="section">
+          <pre>
+[10.10.2024 15:44] Caner: Leyla bu davayı yanlış anlıyorsun.
+                          Mahkeme kararı her şeyi kapsamıyor.
+[10.10.2024 16:02] Leyla: Avukatım seni arayacak.
+[10.10.2024 16:05] Caner: Gerek yok. Yüz yüze konuşalım.
+                          Cuma akşamı müsait misin?
+[10.10.2024 16:11] Leyla: Kısa tutarsak tamam.
+[11.10.2024 19:22] Caner: Ben Beşiktaş'tayım. Neredesin?
+[11.10.2024 19:24] Leyla: 10 dakika içindeyim.
+[11.10.2024 22:29] Caner: İyi geceler. Düşün.
+[11.10.2024 22:31] Leyla: Düşüneceğim bir şey yok.
+          </pre>
+        </div>
+
+        <h3>SİGNAL MESAJLARI — BİLİNMEYEN NUMARA +90-5** ile (Kısmi)</h3>
+        <div class="section">
+          <pre>
+[11.10.2024 23:08] BİLİNMEYEN: İçerde misin?
+[11.10.2024 23:09] Leyla: Evet. Ne istiyorsun?
+[11.10.2024 23:10] BİLİNMEYEN: Konuşmamız gerekiyor.
+                               Kapıyı aç.
+[11.10.2024 23:11] Leyla: Beklenmedik bir ziyaret bu.
+                          Biraz zor bir an.
+[11.10.2024 23:12] BİLİNMEYEN: Biliyorum. Ama önemli.
+                               Çok kısa sürer.
+[11.10.2024 23:14] Leyla: Tamam.
+          </pre>
+        </div>
+
+        <h3>E-POSTA — 08.10.2024</h3>
+        <div class="section">
+          <pre>
+Gönderen: leyla.karahan@nexdata.dev
+Alıcı: avukat.selin.celik@baroist.com
+Konu: Acil — Güvenlik Sorunu
+
+Selin Hanım,
+
+Projeyle ilgili ciddi bir ihlal var. Umut Özdemir'in
+erişim loglarını inceledim. Müşteri datasına yetkisiz
+kopyalama yapılmış. Kimin talebiyle? Bilmiyorum.
+Ama Caner'le geçen hafta yaptığım görüşmede tuhaf
+bir şey söyledi: "NARCIS değerli, onu biliyorum."
+Bu projeyi ona anlatmamıştım.
+
+Ne yapabiliriz?
+
+Leyla
+          </pre>
+        </div>
+
+        <h3>E-POSTA — 12.10.2024 (Son e-posta)</h3>
+        <div class="section">
+          <pre>
+Gönderen: leyla.karahan@nexdata.dev
+Alıcı: avukat.selin.celik@baroist.com
+Konu: Re: Acil — Güvenlik Sorunu
+Saat: 00:31:07
+
+Selin Hanım,
+
+Biraz önce beklenmedik bir ziyaret aldım. Söylenenler
+beni rahatsız etti. Belgeleri güvenli depolamaya
+kopyaladım. Adresi biliyorsunuz.
+
+Yarın görüşürüz.
+
+L.
+
+[Bu e-posta gönderildi — iletim zaman damgası: 00:31:09]
+          </pre>
+        </div>
+
+        <h3>SON ÇÖZÜM NOTU — DEDEKTİF DEĞERLENDİRMESİ</h3>
+        <div class="section">
+          <p>Tüm deliller bir araya getirildiğinde şu tablo ortaya çıkmaktadır:</p>
+          <p>Caner Sabuncu, NARCIS projesinin varlığını bilmektedir — ancak bilgiyi nasıl edindiği açıklanmamıştır. Umut Özdemir bu projeye müşteri adına erişim sağlamış olabilir.</p>
+          <p>11-12 Ekim gecesi saat 23:10-23:14 arasında Leyla Karahan, kimliği belirsiz biri tarafından ziyaret edilmiştir. Bu kişi aynı anda BTS-IST-341 kapsama alanında bulunmaktadır.</p>
+          <p>O gece hangi şüphelinin telefonu BTS-IST-341 kapsama alanında aktifti? GSM log verilerini yeniden inceleyin.</p>
+          <p>Router log'unda 00:47 - 01:09 arasında ağa bağlanan UNKNOWN_DEVICE kimin cihazıdır?</p>
+          <p>Otopsi raporundaki Lorazepam değeri terapötik aralığın kaç katıdır? Bu dozu içeceğe karıştırmak için hangi forma ihtiyaç vardır?</p>
+        </div>
+      `
+    },
+
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// OYUN MOTORU
+// ═══════════════════════════════════════════════════════
+
+const DURUM = {
+  acilanDosyalar: [],
+  aktifDosya: null,
+  cozulenDosyalar: [],
+  baslangic: null,
+  timerInterval: null,
+  notepadCollapsed: false,
+  acilmaSayisi: 0,
+};
+
+function startGame() {
+  document.getElementById('boot-screen').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  DURUM.baslangic = Date.now();
+  DURUM.timerInterval = setInterval(updateTimer, 1000);
+  buildFileTree();
+  loadNotepad();
+
+  // İlk dosyayı göster
+  setTimeout(() => openFile('olay-yeri-raporu'), 300);
+}
+
+function updateTimer() {
+  const elapsed = Math.floor((Date.now() - DURUM.baslangic) / 1000);
+  const h = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+  const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+  const s = (elapsed % 60).toString().padStart(2, '0');
+  document.getElementById('timer').textContent = `${h}:${m}:${s}`;
+}
+
+// Grup sırası
+const GRUP_SIRASI = ['OLAY YERİ', 'ŞÜPHELİLER', 'DİJİTAL KAYITLAR', 'KİLİTLİ DOSYALAR'];
+
+function buildFileTree() {
+  const tree = document.getElementById('file-tree');
+  tree.innerHTML = '';
+
+  const gruplar = {};
+  for (const [id, d] of Object.entries(OYUN_VERISI.dosyalar)) {
+    if (!gruplar[d.grup]) gruplar[d.grup] = [];
+    gruplar[d.grup].push({ id, ...d });
+  }
+
+  for (const grup of GRUP_SIRASI) {
+    if (!gruplar[grup]) continue;
+    const grpDiv = document.createElement('div');
+    grpDiv.className = 'tree-group';
+
+    const label = document.createElement('div');
+    label.className = 'tree-group-label';
+    label.innerHTML = `<span class="arrow">▼</span>${grup}`;
+    label.onclick = () => {
+      label.classList.toggle('collapsed');
+      items.style.display = label.classList.contains('collapsed') ? 'none' : 'block';
+    };
+    grpDiv.appendChild(label);
+
+    const items = document.createElement('div');
+    items.className = 'tree-items';
+
+    for (const dosya of gruplar[grup]) {
+      const item = document.createElement('div');
+      item.className = 'tree-item' + (dosya.kilitli ? ' locked' : '');
+      item.id = `tree-${dosya.id}`;
+      item.dataset.id = dosya.id;
+
+      const icon = dosya.kilitli ? '🔒' : '📄';
+      const badge = dosya.kilitli
+        ? (DURUM.cozulenDosyalar.includes(dosya.id) ? '<span class="badge">ÇÖZÜLDÜ</span>' : '<span class="badge">KİLİTLİ</span>')
+        : '';
+
+      item.innerHTML = `<span class="icon">${icon}</span>${dosya.baslik.replace(/^\[KİLİTLİ\]\s*/,'')}${badge}`;
+      item.onclick = () => openFile(dosya.id);
+      items.appendChild(item);
+    }
+
+    grpDiv.appendChild(items);
+    tree.appendChild(grpDiv);
+  }
+}
+
+function openFile(id) {
+  const dosya = OYUN_VERISI.dosyalar[id];
+  if (!dosya) return;
+
+  DURUM.aktifDosya = id;
+  DURUM.acilmaSayisi++;
+
+  if (!DURUM.acilanDosyalar.includes(id)) {
+    DURUM.acilanDosyalar.push(id);
+  }
+
+  updateTabs();
+  renderFile(id);
+  updateTreeSelection(id);
+  updateStatus();
+}
+
+function updateTabs() {
+  const tabsBar = document.getElementById('tabs-bar');
+  const noTabs = document.getElementById('no-tabs');
+
+  tabsBar.innerHTML = '';
+  if (DURUM.acilanDosyalar.length === 0) {
+    tabsBar.appendChild(noTabs || document.createElement('span'));
+    return;
+  }
+
+  for (const id of DURUM.acilanDosyalar) {
+    const dosya = OYUN_VERISI.dosyalar[id];
+    if (!dosya) continue;
+    const tab = document.createElement('div');
+    tab.className = 'tab' + (id === DURUM.aktifDosya ? ' active' : '');
+    const kilitBadge = dosya.kilitli && !DURUM.cozulenDosyalar.includes(id) ? '🔒 ' : '';
+    tab.innerHTML = `${kilitBadge}${dosya.baslik.replace(/^\[KİLİTLİ\]\s*/, '').substring(0, 22)}...<span class="close-tab" data-id="${id}">×</span>`;
+    tab.onclick = (e) => {
+      if (e.target.classList.contains('close-tab')) {
+        closeTab(e.target.dataset.id);
+      } else {
+        openFile(id);
+      }
+    };
+    tabsBar.appendChild(tab);
+  }
+}
+
+function closeTab(id) {
+  DURUM.acilanDosyalar = DURUM.acilanDosyalar.filter(x => x !== id);
+  if (DURUM.aktifDosya === id) {
+    DURUM.aktifDosya = DURUM.acilanDosyalar[DURUM.acilanDosyalar.length - 1] || null;
+  }
+  updateTabs();
+  if (DURUM.aktifDosya) renderFile(DURUM.aktifDosya);
+  else document.getElementById('file-viewer').innerHTML = '<div style="padding:40px;color:var(--dim);">Dosya seçin.</div>';
+  updateStatus();
+}
+
+function renderFile(id) {
+  const dosya = OYUN_VERISI.dosyalar[id];
+  const viewer = document.getElementById('file-viewer');
+
+  if (dosya.kilitli && !DURUM.cozulenDosyalar.includes(id)) {
+    viewer.innerHTML = `
+      <div class="fade-in">
+        <div class="file-header">
+          <div>
+            <div class="file-title">${dosya.baslik}</div>
+            <div class="file-meta">${dosya.meta}</div>
+          </div>
+        </div>
+        <div class="locked-overlay">
+          <div class="lock-icon">🔒</div>
+          <div class="lock-title">ERİŞİM KISITLI</div>
+          <div class="lock-desc">Bu dosyaya erişmek için yetkilendirme kodu gereklidir.<br>Kodu sisteme girin.</div>
+          <div class="lock-input-row">
+            <input class="lock-input" id="pw-input-${id}" type="text" placeholder="yetkilendirme kodu" autocomplete="off" spellcheck="false">
+            <button class="lock-btn" onclick="checkPassword('${id}')">GİRİŞ</button>
+          </div>
+          <div class="lock-error" id="pw-err-${id}"></div>
+        </div>
+      </div>`;
+
+    document.getElementById(`pw-input-${id}`).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') checkPassword(id);
+    });
+    return;
+  }
+
+  viewer.innerHTML = `
+    <div class="fade-in">
+      <div class="file-header">
+        <div>
+          <div class="file-title">${dosya.baslik.replace('[KİLİTLİ]', DURUM.cozulenDosyalar.includes(id) ? '[ÇÖZÜLDÜ]' : '[KİLİTLİ]')}</div>
+          <div class="file-meta">${dosya.meta}</div>
+        </div>
+      </div>
+      <div class="file-content">${dosya.icerik}</div>
+    </div>`;
+}
+
+function checkPassword(id) {
+  const input = document.getElementById(`pw-input-${id}`);
+  const errEl = document.getElementById(`pw-err-${id}`);
+  const dosya = OYUN_VERISI.dosyalar[id];
+
+  const girilen = input.value.toLowerCase().trim();
+  const dogru = dosya.sifre.toLowerCase().trim();
+
+  if (girilen === dogru) {
+    DURUM.cozulenDosyalar.push(id);
+    buildFileTree();
+    renderFile(id);
+    updateTabs();
+    updateStatus();
+  } else {
+    errEl.textContent = 'ERİŞİM REDDEDİLDİ';
+    input.value = '';
+    input.style.borderColor = 'var(--red)';
+    setTimeout(() => {
+      errEl.textContent = '';
+      input.style.borderColor = 'var(--border)';
+    }, 2000);
+  }
+}
+
+function updateTreeSelection(id) {
+  document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(`tree-${id}`);
+  if (el) {
+    el.classList.add('active');
+    if (DURUM.cozulenDosyalar.includes(id)) {
+      el.classList.add('solved');
+      el.classList.remove('locked');
+    }
+  }
+}
+
+function updateStatus() {
+  const toplam = Object.keys(OYUN_VERISI.dosyalar).length;
+  const kilitli = Object.values(OYUN_VERISI.dosyalar).filter(d => d.kilitli).length;
+  const acik = DURUM.acilanDosyalar.length;
+  const cozulen = DURUM.cozulenDosyalar.length;
+
+  document.getElementById('files-opened').textContent = `Açılan: ${acik} dosya`;
+  document.getElementById('files-locked').textContent = `Kilitli: ${kilitli - cozulen} dosya`;
+
+  const oran = Math.min(100, Math.round((acik / toplam) * 100));
+  document.getElementById('progress-fill').style.width = oran + '%';
+
+  if (cozulen >= 2) {
+    document.getElementById('sb-hint').textContent = 'Tüm deliller elinizde. Katilin kim olduğunu belirleyin.';
+  } else if (cozulen === 1) {
+    document.getElementById('sb-hint').textContent = 'İlk şifreli dosya açıldı. İkinci şifre için devam edin.';
+  }
+}
+
+// Notepad
+function loadNotepad() {
+  const saved = localStorage.getItem('scu-notepad-2024-kr07');
+  if (saved) document.getElementById('notepad-text').value = saved;
+
+  document.getElementById('notepad-text').addEventListener('input', () => {
+    localStorage.setItem('scu-notepad-2024-kr07', document.getElementById('notepad-text').value);
+    document.getElementById('notepad-footer').textContent = 'Kaydedildi: ' + new Date().toLocaleTimeString('tr-TR');
+  });
+}
+
+function toggleNotepad() {
+  const np = document.getElementById('notepad');
+  const toggle = document.getElementById('notepad-toggle');
+  DURUM.notepadCollapsed = !DURUM.notepadCollapsed;
+  np.classList.toggle('collapsed', DURUM.notepadCollapsed);
+  toggle.textContent = DURUM.notepadCollapsed ? '▶' : '◀';
+}
+</script>
+</body>
+</html>
