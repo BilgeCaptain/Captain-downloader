@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VAKA #2026-KB | Adli Bilişim Terminali</title>
+<style>
+  :root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #1c2128;
+    --bg-panel: #0d1117;
+    --accent-cyan: #58a6ff;
+    --accent-green: #3fb950;
+    --accent-red: #f85149;
+    --accent-yellow: #d29922;
+    --accent-purple: #bc8cff;
+    --text-primary: #c9d1d9;
+    --text-muted: #6e7681;
+    --text-code: #79c0ff;
+    --border: #30363d;
+    --border-active: #58a6ff;
+    --tab-bg: #161b22;
+    --tab-active: #0d1117;
+    --scrollbar-bg: #161b22;
+    --scrollbar-thumb: #30363d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Courier New', 'Fira Code', monospace;
+    font-size: 13px;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--scrollbar-bg); }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
+
+  /* HEADER */
+  #header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 42px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    position: relative;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+
+  #header .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--accent-cyan);
+    font-size: 12px;
+    letter-spacing: 2px;
+    font-weight: bold;
+  }
+
+  #header .logo .badge {
+    background: var(--accent-red);
+    color: #fff;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    animation: blink 2s step-end infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  #header .status {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  #header .status .live {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--accent-green);
+  }
+
+  #header .status .live::before {
+    content: '';
+    width: 7px; height: 7px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+  /* MOBILE BUTTONS */
+  .mobile-btn {
+    display: none;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--accent-cyan);
+    padding: 6px 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 3px;
+    letter-spacing: 1px;
+    min-height: 44px;
+  }
+
+  /* MAIN LAYOUT */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* LEFT SIDEBAR */
+  #sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+    z-index: 50;
+  }
+
+  #sidebar-header {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: var(--bg-tertiary);
+  }
+
+  #nav-tree {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  .tree-folder {
+    user-select: none;
+  }
+
+  .tree-folder-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: 12px;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+
+  .tree-folder-label:hover { background: var(--bg-tertiary); }
+
+  .tree-folder-label .arrow {
+    width: 10px;
+    display: inline-block;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    font-size: 9px;
+  }
+
+  .tree-folder.open > .tree-folder-label .arrow { transform: rotate(90deg); }
+
+  .tree-folder-children {
+    display: none;
+    padding-left: 0;
+  }
+
+  .tree-folder.open > .tree-folder-children { display: block; }
+
+  .tree-file {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px 4px 30px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+    position: relative;
+  }
+
+  .tree-file:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+  .tree-file.active { background: rgba(88,166,255,0.08); color: var(--accent-cyan); }
+  .tree-file .file-icon { font-size: 10px; }
+
+  .tree-file .lock-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    margin-left: 4px;
+    background: rgba(248,81,73,0.15);
+    color: var(--accent-red);
+    border: 1px solid rgba(248,81,73,0.3);
+  }
+
+  .tree-file .solved-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    margin-left: 4px;
+    background: rgba(63,185,80,0.15);
+    color: var(--accent-green);
+    border: 1px solid rgba(63,185,80,0.3);
+  }
+
+  /* MAIN CONTENT */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-primary);
+  }
+
+  /* TAB BAR */
+  #tab-bar {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    height: 36px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  #tab-bar::-webkit-scrollbar { height: 3px; }
+
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    height: 100%;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text-muted);
+    border-right: 1px solid var(--border);
+    background: var(--tab-bg);
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+    user-select: none;
+    min-width: 0;
+    max-width: 200px;
+  }
+
+  .tab:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+  .tab.active {
+    background: var(--tab-active);
+    color: var(--accent-cyan);
+    border-bottom: 2px solid var(--accent-cyan);
+    margin-bottom: -1px;
+  }
+
+  .tab .tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tab .tab-close {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .tab .tab-close:hover { background: rgba(248,81,73,0.2); color: var(--accent-red); }
+
+  /* CONTENT AREA */
+  #content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    position: relative;
+  }
+
+  .file-content {
+    padding: 24px 32px;
+    max-width: 900px;
+    line-height: 1.7;
+  }
+
+  .file-content h1 {
+    color: var(--accent-cyan);
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+
+  .file-content h2 {
+    color: var(--accent-green);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 24px 0 10px;
+  }
+
+  .file-content h3 {
+    color: var(--accent-yellow);
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin: 16px 0 8px;
+  }
+
+  .file-content p {
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    font-size: 12px;
+  }
+
+  .file-content .meta-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .file-content .meta-key {
+    color: var(--text-muted);
+    font-size: 11px;
+    min-width: 180px;
+  }
+
+  .file-content .meta-val {
+    color: var(--text-code);
+    font-size: 11px;
+  }
+
+  .file-content .meta-val.highlight {
+    color: var(--accent-yellow);
+    font-weight: bold;
+  }
+
+  .separator {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  /* TABLE */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 11px;
+  }
+
+  .data-table th {
+    background: var(--bg-tertiary);
+    color: var(--accent-cyan);
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid var(--border);
+    letter-spacing: 1px;
+    font-size: 10px;
+  }
+
+  .data-table td {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+  }
+
+  .data-table tr:hover td { background: rgba(88,166,255,0.04); }
+
+  .data-table .td-red { color: var(--accent-red); }
+  .data-table .td-green { color: var(--accent-green); }
+  .data-table .td-yellow { color: var(--accent-yellow); }
+  .data-table .td-cyan { color: var(--accent-cyan); }
+
+  /* EXIF BLOCK */
+  .exif-block {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-active);
+    border-radius: 4px;
+    padding: 16px;
+    margin-top: 20px;
+  }
+
+  .exif-block h3 {
+    color: var(--accent-cyan);
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+
+  .exif-row {
+    display: flex;
+    margin-bottom: 5px;
+    font-size: 11px;
+    gap: 16px;
+  }
+
+  .exif-key { color: var(--text-muted); min-width: 200px; }
+  .exif-val { color: var(--accent-green); }
+  .exif-val.special { color: var(--accent-yellow); font-weight: bold; font-size: 12px; }
+
+  /* LOCKED FILE */
+  .locked-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    padding: 40px;
+    text-align: center;
+    gap: 24px;
+  }
+
+  .lock-icon {
+    font-size: 64px;
+    animation: lockPulse 3s ease-in-out infinite;
+  }
+
+  @keyframes lockPulse {
+    0%,100% { filter: drop-shadow(0 0 8px rgba(248,81,73,0.3)); }
+    50% { filter: drop-shadow(0 0 20px rgba(248,81,73,0.8)); }
+  }
+
+  .locked-title {
+    color: var(--accent-red);
+    font-size: 16px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  .locked-subtitle {
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 2px;
+    max-width: 400px;
+    line-height: 1.6;
+  }
+
+  .password-input-wrapper {
+    display: flex;
+    gap: 0;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .password-input {
+    flex: 1;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-right: none;
+    color: var(--accent-green);
+    padding: 0 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    letter-spacing: 2px;
+    outline: none;
+    min-height: 44px;
+    border-radius: 3px 0 0 3px;
+    transition: border-color 0.2s;
+  }
+
+  .password-input:focus { border-color: var(--accent-cyan); }
+
+  .password-input.error { border-color: var(--accent-red) !important; animation: shake 0.4s ease; }
+  .password-input.success { border-color: var(--accent-green) !important; }
+
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-8px)}
+    40%{transform:translateX(8px)}
+    60%{transform:translateX(-5px)}
+    80%{transform:translateX(5px)}
+  }
+
+  .decrypt-btn {
+    background: rgba(248,81,73,0.15);
+    border: 1px solid var(--accent-red);
+    color: var(--accent-red);
+    padding: 0 20px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    min-height: 44px;
+    border-radius: 0 3px 3px 0;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .decrypt-btn:hover { background: rgba(248,81,73,0.3); }
+
+  .password-error {
+    color: var(--accent-red);
+    font-size: 11px;
+    letter-spacing: 1px;
+    height: 16px;
+  }
+
+  .password-hint {
+    color: var(--text-muted);
+    font-size: 10px;
+    letter-spacing: 1px;
+    border: 1px dashed var(--border);
+    padding: 8px 16px;
+    border-radius: 3px;
+    max-width: 420px;
+  }
+
+  /* WELCOME SCREEN */
+  .welcome-screen {
+    padding: 40px;
+    max-width: 700px;
+  }
+
+  .welcome-screen .ascii-art {
+    color: var(--accent-cyan);
+    font-size: 11px;
+    line-height: 1.2;
+    margin-bottom: 30px;
+    white-space: pre;
+    opacity: 0.7;
+  }
+
+  .welcome-screen .case-header {
+    border: 1px solid var(--accent-red);
+    padding: 20px;
+    margin-bottom: 24px;
+    position: relative;
+    background: rgba(248,81,73,0.05);
+  }
+
+  .welcome-screen .case-header::before {
+    content: '[ SINIFLANDIRILMIŞ DOSYA ]';
+    position: absolute;
+    top: -8px;
+    left: 16px;
+    background: var(--bg-primary);
+    padding: 0 8px;
+    color: var(--accent-red);
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+
+  /* RIGHT NOTES PANEL */
+  #notes-panel {
+    width: 260px;
+    min-width: 260px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    z-index: 50;
+  }
+
+  #notes-header {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--accent-yellow);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  #notes-area {
+    flex: 1;
+    resize: none;
+    background: transparent;
+    border: none;
+    color: var(--accent-green);
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    padding: 14px;
+    outline: none;
+    line-height: 1.7;
+  }
+
+  #notes-area::placeholder { color: var(--text-muted); }
+
+  /* EMPTY TAB */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  .empty-state .icon { font-size: 48px; opacity: 0.3; }
+
+  /* VICTORY SCREEN */
+  .victory-screen {
+    padding: 40px;
+    text-align: center;
+  }
+
+  .victory-screen .verdict {
+    color: var(--accent-green);
+    font-size: 20px;
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+    animation: victoryPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes victoryPulse {
+    0%,100%{filter:drop-shadow(0 0 10px rgba(63,185,80,0.5))}
+    50%{filter:drop-shadow(0 0 30px rgba(63,185,80,1))}
+  }
+
+  /* OVERLAY (MOBILE) */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 40;
+  }
+
+  .overlay.active { display: block; }
+
+  /* MOBILE RESPONSIVE */
+  @media (max-width: 768px) {
+    #sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100%;
+      transform: translateX(-100%);
+      z-index: 200;
+    }
+
+    #sidebar.open { transform: translateX(0); }
+
+    #notes-panel {
+      position: fixed;
+      right: 0;
+      top: 0;
+      height: 100%;
+      transform: translateX(100%);
+      z-index: 200;
+    }
+
+    #notes-panel.open { transform: translateX(0); }
+
+    .mobile-btn { display: flex; align-items: center; gap: 6px; }
+
+    #header .status .datetime { display: none; }
+
+    .file-content { padding: 16px; }
+
+    .welcome-screen { padding: 20px; }
+    .welcome-screen .ascii-art { display: none; }
+
+    .locked-container { padding: 24px; min-height: 300px; }
+    .lock-icon { font-size: 48px; }
+    .locked-title { font-size: 13px; }
+
+    .password-input-wrapper { flex-direction: column; }
+    .password-input { border-right: 1px solid var(--border); border-bottom: none; border-radius: 3px 3px 0 0; }
+    .decrypt-btn { border-radius: 0 0 3px 3px; }
+
+    #main { min-width: 0; }
+  }
+
+  /* TYPING CURSOR EFFECT */
+  .typing::after {
+    content: '█';
+    animation: typeCursor 1s step-end infinite;
+    color: var(--accent-green);
+  }
+
+  @keyframes typeCursor { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .log-line {
+    font-size: 11px;
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+  }
+
+  .log-line .ts { color: var(--text-muted); margin-right: 12px; }
+  .log-line .ev { color: var(--accent-cyan); margin-right: 8px; }
+  .log-line .detail { color: var(--text-primary); }
+
+  .tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 2px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin: 2px;
+  }
+
+  .tag-red { background: rgba(248,81,73,0.15); color: var(--accent-red); border: 1px solid rgba(248,81,73,0.3); }
+  .tag-green { background: rgba(63,185,80,0.15); color: var(--accent-green); border: 1px solid rgba(63,185,80,0.3); }
+  .tag-yellow { background: rgba(210,153,34,0.15); color: var(--accent-yellow); border: 1px solid rgba(210,153,34,0.3); }
+  .tag-cyan { background: rgba(88,166,255,0.15); color: var(--accent-cyan); border: 1px solid rgba(88,166,255,0.3); }
+  .tag-purple { background: rgba(188,140,255,0.15); color: var(--accent-purple); border: 1px solid rgba(188,140,255,0.3); }
+
+  .alert-box {
+    border-left: 3px solid var(--accent-red);
+    background: rgba(248,81,73,0.06);
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 11px;
+    color: var(--text-primary);
+  }
+
+  .info-box {
+    border-left: 3px solid var(--accent-cyan);
+    background: rgba(88,166,255,0.06);
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 11px;
+    color: var(--text-primary);
+  }
+
+  .code-block {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 11px;
+    color: var(--accent-green);
+    border-radius: 3px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .signature-block {
+    margin-top: 30px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* PHOTO VIEWER */
+  .photo-container {
+    margin: 16px 0;
+  }
+
+  .photo-placeholder {
+    width: 100%;
+    max-width: 500px;
+    height: 300px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .photo-placeholder::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(48,54,61,0.3) 10px,
+      rgba(48,54,61,0.3) 11px
+    );
+  }
+
+  .photo-placeholder .photo-icon { font-size: 48px; position: relative; z-index: 1; }
+  .photo-placeholder .photo-label { position: relative; z-index: 1; letter-spacing: 2px; }
+
+  /* PROGRESS / CASE STATUS */
+  #case-status {
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    font-size: 10px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  #case-status .status-item { display: flex; align-items: center; gap: 6px; }
+  #case-status .dot { width: 6px; height: 6px; border-radius: 50%; }
+  #case-status .dot-red { background: var(--accent-red); }
+  #case-status .dot-green { background: var(--accent-green); }
+  #case-status .dot-yellow { background: var(--accent-yellow); }
+</style>
+</head>
+<body>
+
+<div id="overlay" class="overlay" onclick="closeAllDrawers()"></div>
+
+<div id="app">
+  <!-- HEADER -->
+  <div id="header">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="mobile-btn" onclick="toggleSidebar()">☰ MENÜ</button>
+      <div class="logo">
+        <span>⬡</span>
+        <span>ADLİ BİLİŞİM TERMİNALİ v4.2.1</span>
+        <span class="badge">AKTİF VAKA</span>
+      </div>
+    </div>
+    <div class="status">
+      <span class="live">CANLI SİSTEM</span>
+      <span class="datetime" id="clock">--:--:--</span>
+      <span>VAKA #2026-KB-0524</span>
+    </div>
+    <button class="mobile-btn" onclick="toggleNotes()">📝 NOTLAR</button>
+  </div>
+
+  <!-- WORKSPACE -->
+  <div id="workspace">
+    <!-- LEFT SIDEBAR -->
+    <div id="sidebar">
+      <div id="sidebar-header">// DOSYA AĞACI</div>
+      <div id="nav-tree"></div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main">
+      <!-- TAB BAR -->
+      <div id="tab-bar"></div>
+
+      <!-- CONTENT -->
+      <div id="content">
+        <div class="welcome-screen" id="welcome">
+          <div class="ascii-art">╔══════════════════════════════════════════════════════╗
+║    ADLİ BİLİŞİM VE DİJİTAL ANALİZ SİSTEMİ v4.2    ║
+║    Türkiye Siber Suçlar Araştırma Birimi [TÜSAB]    ║
+╚══════════════════════════════════════════════════════╝</div>
+          <div class="case-header">
+            <div class="meta-row"><span class="meta-key">VAKA NO</span><span class="meta-val">#2026-KB-0524</span></div>
+            <div class="meta-row"><span class="meta-key">TARİH</span><span class="meta-val">24 Mayıs 2026, 06:32</span></div>
+            <div class="meta-row"><span class="meta-key">KURBAN</span><span class="meta-val highlight">LEYLA KARAHAN (37)</span></div>
+            <div class="meta-row"><span class="meta-key">OLAY YERİ</span><span class="meta-val">Kuzguncuk, Üsküdar, İstanbul</span></div>
+            <div class="meta-row"><span class="meta-key">RESMİ DURUM</span><span class="meta-val td-red">İntihar (Ön Tanı) — SORGULANMAKTA</span></div>
+            <div class="meta-row"><span class="meta-key">TAHLİL DURUMU</span><span class="meta-val td-yellow">Adli Bilişim İmajı Analizi Devam Ediyor</span></div>
+          </div>
+          <p style="color:var(--text-muted);font-size:12px;line-height:1.8;">Bilgisayarınıza yüklenen adli imaj verileri, kurbanın dijital cihazlarından çıkarılmıştır. Sol paneldeki dosya ağacını kullanarak delilleri inceleyin. Tüm bulgularınızı sağ paneldeki not defterinize kaydedin. Sistem sizi yönlendirmeyecektir.</p>
+          <div style="margin-top:20px;font-size:10px;color:var(--text-muted);letter-spacing:2px;">[ SOL PANELDEKİ DOSYALARA TIKLAYIN ]</div>
+        </div>
+      </div>
+
+      <!-- STATUS BAR -->
+      <div id="case-status">
+        <div class="status-item"><div class="dot dot-red"></div><span>GİZLİ DOSYA 1: <span id="s1-status">KİLİTLİ</span></span></div>
+        <div class="status-item"><div class="dot dot-red" id="s2-dot"></div><span>GİZLİ DOSYA 2: <span id="s2-status">KİLİTLİ</span></span></div>
+        <div class="status-item" style="margin-left:auto;"><span id="solve-label"></span></div>
+      </div>
+    </div>
+
+    <!-- NOTES PANEL -->
+    <div id="notes-panel">
+      <div id="notes-header">
+        <span>📝 // NOTLARIM</span>
+        <span style="font-size:9px;color:var(--text-muted)">OTOMATİK KAYIT</span>
+      </div>
+      <textarea id="notes-area" placeholder="// Bulgularınızı buraya not edin...&#10;// Bu alan otomatik kaydedilir.&#10;// Sekmeler değişse de notlarınız silinmez."></textarea>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== OYUN VERİSİ ==========
+const OYUN_VERISI = {
+  dosyalar: {
+
+    // DAVA DOSYALARI
+    "olay-yeri-raporu": {
+      id: "olay-yeri-raporu",
+      ad: "Olay Yeri Raporu",
+      ikon: "📋",
+      kilitli: false,
+      tur: "belge",
+      icerik: `<div class="file-content">
+<h1>⚠ OLAY YERİ İNCELEME RAPORU</h1>
+<div class="meta-row"><span class="meta-key">Rapor No</span><span class="meta-val">POL-2026-0524-OY</span></div>
+<div class="meta-row"><span class="meta-key">Düzenleme Tarihi</span><span class="meta-val">24.05.2026 — 08:45</span></div>
+<div class="meta-row"><span class="meta-key">İnceleme Ekibi</span><span class="meta-val">Müfettişler Sönmez & Acar / Adli Tıp Dr. Korkmaz</span></div>
+<div class="meta-row"><span class="meta-key">Adres</span><span class="meta-val">Kuzguncuk Mah. Bağlarbaşı Cd. No:17/4, Üsküdar, İST</span></div>
+<div class="meta-row"><span class="meta-key">Gizlilik Derecesi</span><span class="meta-val tag tag-red">SINIFLANDIRILMIŞ</span></div>
+<hr class="separator">
+<h2>1. VAKA ÖZET BİLGİSİ</h2>
+<p>Kurban Leyla Karahan (D.O.B: 12.03.1989), 24 Mayıs 2026 Pazar sabahı saat 06:18'de Kuzguncuk'taki ikametgâhında, komşusu İ.Aksoy tarafından dairesi önünde bayılmış hâlde bulunmuş ve ambulans çağrılmıştır. Leyla Karahan, İstanbul Eğitim Araştırma Hastanesi'ne kaldırılmış, saat 07:02'de hayatını kaybetmiştir. İlk muayenede ölüm sebebi olarak "akut ilaç zehirlenmesi" tespit edilmiş; resmi ön tanı intihardır.</p>
+<div class="alert-box">⚠ ANORMAL BULGULAR: Adli Bilişim uzmanı Teğmen Polat'ın yaptığı laptop incelemesinde, kurbanın cihazında sistematik dosya silme girişimleri ve uzak bağlantı logları saptanmıştır. Bu durum intihar tanısını ağır biçimde sorgulatmaktadır.</div>
+<h2>2. OLAY YERİ DURUMU</h2>
+<p>Daire genel itibarıyla düzenli görünmektedir; ancak aşağıdaki ayrıntılar dikkat çekicidir:</p>
+<ul style="color:var(--text-primary);font-size:12px;line-height:2;padding-left:20px;">
+  <li>Mutfak masasında yarısı boş bir kırmızı şarap kadehi bulunmuştur. Kadehin jant kenarında yabancı parmak izi tespit edilmiştir (laboratuvar analizi beklemede).</li>
+  <li>Kurbanın MacBook Pro'su (15", 2023 model) pil seviyesi %3 ile açık durumda bırakılmıştır. Ekran kilit durumunda değildi.</li>
+  <li>Yatak odasında, standart dışı bir uzunlukta (48cm) HDMI kablosu, bilgisayarın bulunduğu masanın hemen yanında zemine düşmüş hâlde bulunmuştur.</li>
+  <li>Kurbanın cep telefonu (iPhone 15 Pro Max) banyo tezgâhında bulunmuştur; şarj kablosuna takılı değildi ve pil %0 durumundaydı.</li>
+  <li>Kapı üst kilidi (Abluka) açık olarak saptanmıştır. Kurban bu kilidi asla açık bırakmazdı; komşu İ.Aksoy'un ifadesiyle "Leyla Hanım son derece güvenlik bilincine sahip bir kadındı, geceleri daima iki kat kilitlerdi."</li>
+</ul>
+<h2>3. ELEKTRONİK DELİLLER (TOPLANAN)</h2>
+<table class="data-table">
+  <tr><th>Sıra</th><th>Cihaz/Materyal</th><th>Delil No</th><th>Durum</th></tr>
+  <tr><td>1</td><td>MacBook Pro 15" (2023)</td><td>EL-2026-0001</td><td class="td-yellow">Adli İmaj Alındı</td></tr>
+  <tr><td>2</td><td>iPhone 15 Pro Max (Siyah)</td><td>EL-2026-0002</td><td class="td-yellow">GSM Log Çıkarıldı</td></tr>
+  <tr><td>3</td><td>TP-Link Archer AX73 Router</td><td>EL-2026-0003</td><td class="td-green">Log Analizi Tamamlandı</td></tr>
+  <tr><td>4</td><td>Samsung T7 SSD (Harici, 1TB)</td><td>EL-2026-0004</td><td class="td-red">ŞİFRELİ — Çözülemedi</td></tr>
+  <tr><td>5</td><td>Parmak İzleri (3 Adet, Yabancı)</td><td>FZ-2026-0001</td><td class="td-yellow">AFIS Sorgusu Beklemede</td></tr>
+</table>
+<h2>4. İLK ÇEVRE SORUŞTURMASI</h2>
+<p>Bina güvenlik kamerası görüntüleri incelenmiştir. 23 Mayıs 2026 saat 21:30 ile 24 Mayıs 2026 saat 02:15 arasındaki görüntüler, bilinmeyen bir kişi tarafından sistematik biçimde silinmiştir. Silme işleminin bina yöneticisinin bilgisayarından yapıldığı tespit edilmiş; bina yöneticisi ise sisteme kendi erişmediğini, bilgisayarının uzaktan ele geçirilmiş olabileceğini beyan etmiştir.</p>
+<div class="info-box">ℹ BAĞLANTI: Router log analizine göre kurbanın internet bağlantısı, ölüm saatinden 47 dakika önce (yaklaşık 23:15) aniden kesilmiştir. Bu durum EXIF ve GSM verileriyle çapraz kontrol edilmelidir.</div>
+<div class="signature-block">Hazırlayan: Müfettiş E.Sönmez — TÜSAB Siber Suçlar Birimi<br>Onaylayan: Komiser Yrd. C.Demir</div>
+</div>`
+    },
+
+    "otopsi-ozeti": {
+      id: "otopsi-ozeti",
+      ad: "Otopsi Özeti",
+      ikon: "🔬",
+      kilitli: false,
+      tur: "belge",
+      icerik: `<div class="file-content">
+<h1>🔬 OTOPSİ VE TOKSİKOLOJİ RAPORU</h1>
+<div class="meta-row"><span class="meta-key">Rapor No</span><span class="meta-val">AT-2026-0524-LK</span></div>
+<div class="meta-row"><span class="meta-key">Kurban</span><span class="meta-val highlight">LEYLA KARAHAN — T.C.: 34***0589</span></div>
+<div class="meta-row"><span class="meta-key">Ölüm Tarihi</span><span class="meta-val">24.05.2026 — 07:02</span></div>
+<div class="meta-row"><span class="meta-key">Otopsi Tarihi</span><span class="meta-val">24.05.2026 — 14:30</span></div>
+<div class="meta-row"><span class="meta-key">Otopsiyi Yapan</span><span class="meta-val">Adli Tıp Uzm. Dr. N.Korkmaz, İstanbul ATK</span></div>
+<hr class="separator">
+<h2>A. DIŞ MUAYENE</h2>
+<p>Kurban 37 yaşında, 165 cm boyunda, yaklaşık 58 kg ağırlığında kadın bireydir. Vücut hipostazı (livor mortis) sırtta gözlemlenmiştir ve konuma uygundur; ancak sağ elde ve ön kol bölgesinde küçük yoğunluklu ek leke mevcut olup bu durum ölümden önceki son birkaç saatte kurbanın kısa süreli hareket ettirildiğine işaret etmektedir.</p>
+<div class="alert-box">⚠ KRİTİK BULGU: Sağ elde ve ön koldaki livor mortis aykırılığı, kurbanın ölümünden önceki dönemde pozisyon değişikliğine maruz kaldığını göstermektedir. Bu bulgu klasik intiharlarda nadiren rastlanan bir paterndir.</div>
+<h2>B. TOKSİKOLOJİK ANALİZ</h2>
+<p>Kurbanın kan ve idrar örneklerinde aşağıdaki maddeler tespit edilmiştir:</p>
+<table class="data-table">
+  <tr><th>Madde</th><th>Tespit Değeri</th><th>Terapötik Sınır</th><th>Yorum</th></tr>
+  <tr><td>Zolpidem (Uyku İlacı)</td><td class="td-red">4.8 mg/L</td><td>0.02–0.25 mg/L</td><td class="td-red">Terapötik dozun ~19 katı</td></tr>
+  <tr><td>Etanol (Alkol)</td><td class="td-yellow">1.4 g/L</td><td>0 (yasal limit: 0.5)</td><td class="td-yellow">Orta düzey intoksikasyon</td></tr>
+  <tr><td>Ketamin</td><td class="td-red">İZLER (0.08 mg/L)</td><td>Terapötik kullanım yok</td><td class="td-red">ANORMAL — Kaynak bilinmiyor</td></tr>
+</table>
+<p style="margin-top:12px;">Zolpidem seviyesi; bu miktarın tek seferde, kendi iradesiyle alınmasının pratik olarak imkânsız olduğunu göstermektedir. Kurban aktif konuşabilen biri olarak bu kadar yüksek dozda uyku ilacını içeceği miktarda şarapla birlikte tüketemezdi. İzler halinde bulunan ketamin ise kurbanın vücuduna harici müdahaleyle verilmiş olabileceğine işaret etmektedir.</p>
+<h2>C. MIDE İÇERİĞİ ANALİZİ</h2>
+<p>Mide içeriğinde yaklaşık 200ml kırmızı şarap kalıntısı, eritilmiş hâlde 4 adet Zolpidem 10mg tabletinin kalıntısı ve hafif sindirilmiş makarna içeriği (akşam yemeği) tespit edilmiştir. İlaç kalıntısı şarap ile birlikte verilmiş olup kurbanın ilaçların farkında olup olmadığı tartışmalıdır.</p>
+<h2>D. İÇ MUAYENE VE DİĞER BULGULAR</h2>
+<ul style="color:var(--text-primary);font-size:12px;line-height:2;padding-left:20px;">
+  <li>Karaciğerde minör fibrozis (kronik, önceden mevcut)</li>
+  <li>Akciğerlerde pulmoner ödem (ölümle uyumlu)</li>
+  <li>Beyin dokusunda hafif ödem</li>
+  <li>Travmatik bulgu YOK (kesik, ezik, kırık)</li>
+  <li>Savunma yaralanması bulgusu YOK</li>
+</ul>
+<h2>E. SONUÇ VE DEĞERLENDİRME</h2>
+<div class="info-box">Ölüm sebebi akut zolpidem ve alkol kombinasyonuna bağlı solunum yetmezliğidir. Ancak kan düzeyi, bu maddelerin dışarıdan ve kurbanın bilgisi olmaksızın verilmiş olma ihtimalini makul kılmaktadır. Ketamin izleri, önceden etkisiz hâle getirilmiş kurbanın müdahaleye karşı direnç gösterememesini açıklayabilir. Kesin tanı için dijital deliller ile fiziksel bulgular birlikte değerlendirilmelidir.</div>
+<div class="signature-block">Uzm. Dr. N.Korkmaz — İstanbul Adli Tıp Kurumu<br>Tarih: 25.05.2026</div>
+</div>`
+    },
+
+    // ŞÜPHELİLER
+    "suphe-caner": {
+      id: "suphe-caner",
+      ad: "Caner Sabuncu",
+      ikon: "👤",
+      kilitli: false,
+      tur: "suphe",
+      icerik: `<div class="file-content">
+<h1>👤 ŞÜPHELİ PROFİLİ — CANER SABUNCU</h1>
+<div class="meta-row"><span class="meta-key">T.C. Kimlik No</span><span class="meta-val">34***7821</span></div>
+<div class="meta-row"><span class="meta-key">Doğum Tarihi</span><span class="meta-val">17.06.1985</span></div>
+<div class="meta-row"><span class="meta-key">Meslek</span><span class="meta-val">Yazılım Şirketi Ortak / CEO — CyberNest A.Ş.</span></div>
+<div class="meta-row"><span class="meta-key">Kurbanla İlişkisi</span><span class="meta-val highlight">Eski İş Ortağı (2019–2025)</span></div>
+<div class="meta-row"><span class="meta-key">Risk Seviyesi</span><span class="meta-val"><span class="tag tag-red">YÜKSEK</span></span></div>
+<hr class="separator">
+<h2>GEÇMİŞ VE ANA BAĞLANTI</h2>
+<p>Caner Sabuncu, 2019 yılında kurban Leyla Karahan ile birlikte "CyberNest" adlı siber güvenlik şirketini kurmuştur. Şirket, özellikle savunma sanayi ve finans sektörüne yönelik penetrasyon testi ve altyapı güvenlik hizmetleri vermiştir. 2024 yılı sonlarında iki ortak arasında "PROMETHEUS" adlı projeye dair ciddi bir anlaşmazlık baş göstermiş; Caner Sabuncu'nun şirketteki hissesini devrettiği iddia edilmektedir.</p>
+<h2>İFADE ÖZETİ — (23.05.2026 Saat 14:00, İlk İfade)</h2>
+<div class="info-box">Müfettiş: Leyla Karahan ile son ne zaman görüştünüz?<br><br>Caner Sabuncu: "Geçen hafta, yaklaşık Salı günü. Ticari bir mesele hakkında kısa bir telefon görüşmesi. Zaten aramızda pek konuşma kalmamıştı. Hukuki süreç devam ediyor. Olay gecesi nerede olduğumu sormayacak mısınız? Ben o gece Ankara'daydım. Erken sabah uçuşumuz vardı, Esenboğa'daki Hilton'da kaldım. Otel kamera kayıtları bunu kanıtlar."</div>
+<h2>SORGU TUTANAĞI DEVAMI</h2>
+<p>Müfettiş Sönmez, Caner Sabuncu'nun Ankara'da olduğu iddiasının detaylarını sorduğunda Sabuncu; kaldığı otelin adını, katını ve oda numarasını (Kat 4, Oda 412) tereddütsüz biçimde vermiştir. Bu bilgiler Ankara Hilton ile çapraz kontrol edilmeye çalışılmış; otel yöneticisi gerçekten söz konusu tarihlerde Caner Sabuncu adına bir rezervasyon olduğunu teyit etmiştir. Ancak Sabuncu'nun odaya check-in yapma saatine ilişkin kayıtlar "teknik sorun" gerekçesiyle sunulamamıştır.</p>
+<div class="alert-box">⚠ DİKKAT: Check-in kaydının doğrulanamaması kritik bir boşluktur. Ayrıca cep telefonu GSM konum logları Ankara iddiasıyla ÇAKIŞMAMAKTADIR. Bu veriler için TELEFON KAYITLARI bölümüne bakınız.</div>
+<h2>FİNANSAL ARKA PLAN</h2>
+<p>Caner Sabuncu, 2025 yılı başında şirketteki hissesini "gönüllü olarak" devrettiğini beyan etmiş olsa da mahkeme süreçlerine sızan belgelere göre bu devir, Leyla Karahan tarafından tespit edilen iç hesap transferleri sonucunda gerçekleşmiştir. Tahmini uğradığı kayıp: <span class="tag tag-red">4.2 milyon TL</span>. Sabuncu'nun bu süreçte avukat tutmadığı bilinmektedir; "maddi imkânsızlık" öne sürmüştür.</p>
+<h2>DİJİTAL AYAK İZİ</h2>
+<table class="data-table">
+  <tr><th>Kayıt Türü</th><th>Tarih</th><th>Detay</th><th>Durum</th></tr>
+  <tr><td>E-posta (Leyla'ya)</td><td>18.05.2026</td><td>"Bu bitmeyecek. İkimiz de biliyoruz."</td><td class="td-red">Tehdit içerikli</td></tr>
+  <tr><td>Signal Mesajı</td><td>20.05.2026</td><td>[ŞİFRELİ — içerik okunamıyor]</td><td class="td-yellow">İnceleniyor</td></tr>
+  <tr><td>IP Bağlantısı</td><td>23.05.2026 22:41</td><td>CyberNest sunucusundan Leyla'nın ağına giriş denemesi</td><td class="td-red">BAŞARISIZ (reddedildi)</td></tr>
+  <tr><td>IP Bağlantısı</td><td>23.05.2026 23:09</td><td>Bilinmeyen VPN üzerinden Leyla'nın ağına giriş</td><td class="td-red">BAŞARILI (4dk 17sn)</td></tr>
+</table>
+<div class="signature-block">Son güncelleme: 25.05.2026 — Müfettiş E.Sönmez</div>
+</div>`
+    },
+
+    "suphe-melis": {
+      id: "suphe-melis",
+      ad: "Melis Alkan",
+      ikon: "👤",
+      kilitli: false,
+      tur: "suphe",
+      icerik: `<div class="file-content">
+<h1>👤 ŞÜPHELİ PROFİLİ — MELİS ALKAN</h1>
+<div class="meta-row"><span class="meta-key">T.C. Kimlik No</span><span class="meta-val">41***2234</span></div>
+<div class="meta-row"><span class="meta-key">Doğum Tarihi</span><span class="meta-val">03.02.1981</span></div>
+<div class="meta-row"><span class="meta-key">Meslek</span><span class="meta-val">Genel Müdür — SecureAxis Teknoloji A.Ş.</span></div>
+<div class="meta-row"><span class="meta-key">Kurbanla İlişkisi</span><span class="meta-val highlight">Rakip Şirket Yöneticisi / Ticari Düşman</span></div>
+<div class="meta-row"><span class="meta-key">Risk Seviyesi</span><span class="meta-val"><span class="tag tag-yellow">ORTA</span></span></div>
+<hr class="separator">
+<h2>GEÇMİŞ VE ANA BAĞLANTI</h2>
+<p>Melis Alkan, CyberNest'in doğrudan rakibi olan SecureAxis şirketini 2021 yılında kurmuştur. İki şirket arasında 2024 yılında bir Savunma Bakanlığı ihalesi için fiili rekabet yaşanmış; ihale CyberNest tarafından kazanılmıştır. Melis Alkan, ihalenin usulsüz kazanıldığını iddia etmiş ve Kamu İhale Kurumu'na şikâyet başvurusunda bulunmuştur. Şikâyet hâlâ sonuçlanmamıştır.</p>
+<h2>İFADE ÖZETİ</h2>
+<div class="info-box">Melis Alkan: "Ben Leyla Karahan'ı kişisel olarak tanımıyordum bile. Sadece iş düzleminde muhatap oldum, o da mahkeme aracılığıyla. İhaledeki usulsüzlüğü ispatlayacağız ama bunu hukuki yollarla yapıyoruz. O gece mi? Saat 20:00'de ofis toplantımız bitti, doğruca eve gittim. Eşim tanıklık eder."</div>
+<h2>SORUŞTURMA NOTU</h2>
+<p>Melis Alkan'ın olay gecesine ilişkin beyanı eşi tarafından doğrulanmıştır. Telefon GSM logları da Beşiktaş'taki ikametgahıyla tutarlıdır. Dijital ayak izinde doğrudan bir bağlantı kurulamamıştır. Bununla birlikte, SecureAxis şirket sunucularından CyberNest ağına yapılmış iki başarısız giriş denemesi 2025 yılı içinde kayıt altına alınmıştır; ancak bu denemelerin Melis Alkan'la doğrudan ilişkisi ispatlanamamıştır.</p>
+<div class="info-box">ℹ YORUM: Melis Alkan'ın cinayete katılımı mümkün görünmemektedir. Ancak PROMETHEUS projesini öğrenmek için endüstriyel casusluk motivasyonu mevcuttur. Bu dosya, cinayetle değil, proje sızdırma olasılığıyla ilgili tutulmalıdır.</div>
+<div class="signature-block">Son güncelleme: 25.05.2026 — Müfettiş E.Sönmez</div>
+</div>`
+    },
+
+    "suphe-burak": {
+      id: "suphe-burak",
+      ad: "Burak Karahan",
+      ikon: "👤",
+      kilitli: false,
+      tur: "suphe",
+      icerik: `<div class="file-content">
+<h1>👤 ŞÜPHELİ PROFİLİ — BURAK KARAHAN</h1>
+<div class="meta-row"><span class="meta-key">T.C. Kimlik No</span><span class="meta-val">35***4417</span></div>
+<div class="meta-row"><span class="meta-key">Doğum Tarihi</span><span class="meta-val">29.09.1987</span></div>
+<div class="meta-row"><span class="meta-key">Meslek</span><span class="meta-val">Mimar — Serbest Çalışan</span></div>
+<div class="meta-row"><span class="meta-key">Kurbanla İlişkisi</span><span class="meta-val highlight">Eski Eş (2014–2022 evlilik, 2023 boşanma kesinleşti)</span></div>
+<div class="meta-row"><span class="meta-key">Risk Seviyesi</span><span class="meta-val"><span class="tag tag-yellow">ORTA-DÜŞÜK</span></span></div>
+<hr class="separator">
+<h2>GEÇMİŞ VE ANA BAĞLANTI</h2>
+<p>Burak Karahan ile Leyla Karahan 2014 yılında evlenmiş, çiftin çocuğu olmamıştır. Boşanma süreci 2022'de başlamış ve 2023 yılında kesinleşmiştir. Boşanma anlaşmasına göre Burak Karahan, Leyla Karahan'ın "ortak edinilmiş mal" kapsamında talep ettiği 850.000 TL'yi ödemek zorunda kalmış; bu ödemeyi kredi kullanarak gerçekleştirmiştir.</p>
+<h2>İFADE TUTANAĞI — UZUN VERSİYON (23.05.2026, Saat 18:30)</h2>
+<div class="info-box">
+Müfettiş: Leyla Hanım hakkında ne düşünüyordunuz?<br><br>
+Burak Karahan: "Leyla... Leyla çok değerliydi benim için. Şimdi geçmişi konuşmak zor. Boşanma acı oldu ama ben ona kızmazdım, anlıyor musunuz? Hatta ben... ben çocukluğundan bahsedeyim mi? Kirazlıbahçe'de büyümüştü. Babası oraya çok bağlıydı. Leyla da o mahalleyi çok severdi. Oraya gidince hep huzurlanırdı. Neden soruyorum bunu? Çünkü Leyla'nın şifrelerini hep o tür şeylerden seçtiğini biliyorum. Kirazlıbahçe gibi... Bak, müfettiş bey, ben onun ölümünü istemezdim. Buradan kazandığım şey yok ki. Borcum bile var ona verdiğim para yüzünden."<br><br>
+Müfettiş: O gece neredeydiniz?<br><br>
+Burak Karahan: "Evdeydim. Anadolu yakasında, Kadıköy. Yalnızdım. Kimse yanımda değildi. Telefon kayıtlarıma bakabilirsiniz, gece hiçbir yere çıkmadım."
+</div>
+<h2>SORUŞTURMA NOTU</h2>
+<p>Burak Karahan'ın olay gecesi için kanıtlanmış bir alibibi yoktur. GSM logları Kadıköy baz istasyonlarıyla tutarlı olmakla birlikte, Kuzguncuk ile Kadıköy arasındaki mesafe yaklaşık 4 km olup deniz yoluyla 15 dakikada geçilebilmektedir.</p>
+<div class="alert-box">⚠ YANILTICI İPUCU KAYDI: Burak Karahan sorgu sırasında Leyla'nın "Kirazlıbahçe" mahallesini sevdiğini ve şifrelerini bu tür kişisel yerlere göre belirlediğini vurgulamıştır. Bu bilgi doğrulanamamıştır ve aktif bir yanıltma girişimi olarak değerlendirilebilir. Araştırma ekibi, Kirazlıbahçe bağlantısını şifre analizi kapsamında DÜŞÜK öncelikli olarak sınıflandırmaktadır.</div>
+<h2>FİNANSAL DURUM</h2>
+<p>Burak Karahan'ın boşanma sonrası ödediği 850.000 TL nedeniyle aktif bir banka kredisi bulunmaktadır. Leyla Karahan'a ek bir mali yükümlülüğü mevcut değildir; aksine Leyla'nın ölümü Burak'ı herhangi bir finansal yükümlülükten kurtarmamaktadır. Maddi motif zayıftır.</p>
+<div class="signature-block">Son güncelleme: 25.05.2026 — Müfettiş E.Sönmez</div>
+</div>`
+    },
+
+    // TELEFON KAYITLARI
+    "leyla-gsm": {
+      id: "leyla-gsm",
+      ad: "Leyla — GSM Kayıtları",
+      ikon: "📱",
+      kilitli: false,
+      tur: "log",
+      icerik: `<div class="file-content">
+<h1>📱 LEYLA KARAHAN — GSM LOGu (Son 72 Saat)</h1>
+<div class="meta-row"><span class="meta-key">Operatör</span><span class="meta-val">Turkcell — Hat No: 0532-***-7241</span></div>
+<div class="meta-row"><span class="meta-key">Rapor Aralığı</span><span class="meta-val">21.05.2026 00:00 — 24.05.2026 07:02 (ölüm saati)</span></div>
+<div class="meta-row"><span class="meta-key">Kayıt Durumu</span><span class="meta-val tag tag-green">DOĞRULANMIŞ — Operatör Onaylı</span></div>
+<hr class="separator">
+<h2>BAZ İSTASYONU KONUM GEÇMİŞİ (ARAMA/MESAJ)</h2>
+<table class="data-table">
+  <tr><th>Tarih & Saat</th><th>Tür</th><th>Karşı Taraf</th><th>Süre</th><th>Baz İstasyonu</th><th>Mahalle</th></tr>
+  <tr><td>21.05 09:14</td><td>ARAMA GİDEN</td><td>+90532-***-3310</td><td>4dk 22sn</td><td>BST-USK-041</td><td>Üsküdar Merkez</td></tr>
+  <tr><td>21.05 13:45</td><td>ARAMA GİDEN</td><td>+90533-***-8820</td><td>11dk 08sn</td><td>BST-USK-041</td><td>Üsküdar Merkez</td></tr>
+  <tr><td>22.05 10:22</td><td>ARAMA GELEN</td><td>+90212-***-0033 (CyberNest Hat)</td><td>2dk 51sn</td><td>BST-USK-041</td><td>Üsküdar Merkez</td></tr>
+  <tr><td>22.05 16:30</td><td>ARAMA GİDEN</td><td>Umut Özdemir (+90555-***-9918)</td><td>18dk 44sn</td><td>BST-USK-041</td><td>Üsküdar Merkez</td></tr>
+  <tr><td>23.05 08:11</td><td>ARAMA GİDEN</td><td>+90532-***-3310</td><td>7dk 02sn</td><td>BST-USK-041</td><td>Üsküdar Merkez</td></tr>
+  <tr><td>23.05 11:20</td><td>MESAJ GİDEN</td><td>Umut Özdemir (+90555-***-9918)</td><td>—</td><td>BST-USK-041</td><td>Üsküdar Merkez</td></tr>
+  <tr><td>23.05 19:44</td><td>ARAMA GELEN</td><td>+90532-***-4481</td><td>3dk 17sn</td><td>BST-USK-049</td><td>Kuzguncuk</td></tr>
+  <tr><td>23.05 21:08</td><td>ARAMA GİDEN</td><td>+90532-***-4481</td><td>1dk 55sn</td><td>BST-USK-049</td><td>Kuzguncuk</td></tr>
+  <tr><td class="td-red" style="font-weight:bold;">23.05 23:14</td><td class="td-red" style="font-weight:bold;">ARAMA GELEN</td><td class="td-red" style="font-weight:bold;">+90532-***-7700 (Kayıtlı değil)</td><td class="td-red" style="font-weight:bold;">0sn (Cevaplandı, sessiz)</td><td class="td-yellow" style="font-weight:bold;">BST-USK-049</td><td class="td-yellow" style="font-weight:bold;">KUZGUNCUK</td></tr>
+  <tr><td>24.05 00:18</td><td>— (Hat pasif)</td><td>—</td><td>—</td><td>BST-USK-049</td><td>Kuzguncuk</td></tr>
+</table>
+<div class="alert-box">⚠ KRİTİK KAYIT: 23 Mayıs 2026 saat 23:14'te Leyla Karahan'a bilinmeyen bir numaradan arama gelmiştir. Bağlantı kurulmuş (telefon açılmış) ancak konuşma yapılmamıştır. Bu anda kurbanın bağlandığı baz istasyonu <strong>BST-USK-049 — KUZGUNCUK</strong>'tur. Bu, kurbanın o saatte evinde olduğunu ve telefonu açacak bilince sahip olduğunu göstermektedir.</div>
+<h2>BAĞLANTI ANALİZİ</h2>
+<p>Leyla Karahan'ın son 72 saatindeki baz istasyonu kayıtları Üsküdar ve Kuzguncuk bölgesiyle tutarlıdır. 23 Mayıs akşamı 19:44'ten itibaren tüm bağlantılar Kuzguncuk baz istasyonundan yapılmıştır; bu durum Leyla'nın o gece evinde olduğunu doğrulamaktadır. Saat 00:18 sonrasında hat pasife geçmiştir (telefon kapalı veya pil bitti).</p>
+<div class="signature-block">Veri Kaynağı: Turkcell Hukuk Birimi — Yazı No: TC-2026-8834<br>İşleyen: Adli Bilişim Uzmanı Teğmen F.Polat</div>
+</div>`
+    },
+
+    "caner-gsm": {
+      id: "caner-gsm",
+      ad: "Caner — GSM Konum Logları",
+      ikon: "📱",
+      kilitli: false,
+      tur: "log",
+      icerik: `<div class="file-content">
+<h1>📱 CANER SABUNCU — GSM KONUM LOGLARI</h1>
+<div class="meta-row"><span class="meta-key">Operatör</span><span class="meta-val">Vodafone TR — Hat No: 0542-***-3321</span></div>
+<div class="meta-row"><span class="meta-key">Rapor Aralığı</span><span class="meta-val">23.05.2026 18:00 — 24.05.2026 08:00</span></div>
+<div class="meta-row"><span class="meta-key">Caner'in İddiası</span><span class="meta-val tag tag-yellow">Ankara — Hilton Esenboğa'da kaldım</span></div>
+<hr class="separator">
+<h2>BAZ İSTASYONU VERİLERİ — SAATLİK DÖKÜM</h2>
+<table class="data-table">
+  <tr><th>Saat</th><th>Baz İstasyonu</th><th>Şehir/Bölge</th><th>Not</th></tr>
+  <tr><td>18:00</td><td>BST-ANK-112</td><td>Ankara — Çankaya</td><td class="td-green">Ankara'da (İddia ile uyumlu)</td></tr>
+  <tr><td>18:45</td><td>BST-ANK-112</td><td>Ankara — Çankaya</td><td class="td-green">Ankara'da</td></tr>
+  <tr><td>19:30</td><td>BST-ANK-089</td><td>Ankara — Esenboğa Havalimanı</td><td class="td-yellow">Havalimanına hareket</td></tr>
+  <tr><td>20:15</td><td>BST-ANK-089</td><td>Ankara — Esenboğa Havalimanı</td><td class="td-yellow">Havalimanında</td></tr>
+  <tr><td>21:02</td><td class="td-red" style="font-weight:bold;">BST-IST-SAW-004</td><td class="td-red" style="font-weight:bold;">İstanbul — Sabiha Gökçen Havalimanı</td><td class="td-red" style="font-weight:bold;">⚠ ANKARA'DAN DÖNDÜ!</td></tr>
+  <tr><td>21:44</td><td>BST-IST-PEN-021</td><td>İstanbul — Pendik</td><td class="td-red">İstanbul'da hareket ediyor</td></tr>
+  <tr><td>22:18</td><td>BST-IST-USK-033</td><td>İstanbul — Üsküdar</td><td class="td-red">Üsküdar'a yaklaşıyor</td></tr>
+  <tr><td class="td-red" style="font-weight:bold;">22:41</td><td class="td-red" style="font-weight:bold;">BST-USK-049</td><td class="td-red" style="font-weight:bold;">İstanbul — KUZGUNCUK</td><td class="td-red" style="font-weight:bold;">⚠ KURBAN İLE AYNI BÖLGE</td></tr>
+  <tr><td class="td-red" style="font-weight:bold;">23:09</td><td class="td-red" style="font-weight:bold;">BST-USK-049</td><td class="td-red" style="font-weight:bold;">İstanbul — KUZGUNCUK</td><td class="td-red" style="font-weight:bold;">⚠ KURBAN İLE AYNI BÖLGE</td></tr>
+  <tr><td>00:33</td><td>BST-IST-SAW-004</td><td>İstanbul — Sabiha Gökçen Havalimanı</td><td class="td-yellow">Havalimanına dönüş</td></tr>
+  <tr><td>02:15</td><td>BST-ANK-089</td><td>Ankara — Esenboğa Havalimanı</td><td class="td-yellow">Ankara'ya döndü</td></tr>
+  <tr><td>06:30</td><td>BST-ANK-112</td><td>Ankara — Çankaya</td><td class="td-green">Ankara'da</td></tr>
+</table>
+<div class="alert-box">🚨 KRİTİK ÇAKIŞMA: Caner Sabuncu'nun telefonu 21:02'de Sabiha Gökçen'de, 22:41 ve 23:09'da ise KUZGUNCUK'ta baz istasyonuna bağlanmıştır. Bu, Caner'in "Ankara Hilton'da kaldım" iddiasının TAMAMEN ÇÜRÜTÜLMÜŞ olduğunu göstermektedir. 23:09'daki bağlantı, kurbanın evine ağ üzerinden yapılan başarılı girişle EŞ ZAMANLIDIR.</div>
+<h2>DEĞERLENDIRME</h2>
+<p>Caner Sabuncu, kurbanın ölüm gecesinde İstanbul'daydı ve kurbanın ikamet ettiği Kuzguncuk'ta fiziksel olarak bulunuyordu. Hilton otelindeki rezervasyon, muhtemelen kasıtlı olarak oluşturulan sahte alibi kaydıdır. Gerçek hareketi şu şekildedir:</p>
+<div class="code-block">18:00–20:15 → Ankara'da (Toplantı / Alibi oluşturma)
+20:15       → Ankara'dan Sabiha Gökçen'e charter/özel uçuş (kayıt yok)
+21:02       → Sabiha Gökçen'de (İstanbul'a indi)
+21:02–22:41 → Kuzguncuk'a transfer (~40 dk)
+22:41–23:15 → KUZGUNCUK (Kurban ile aynı bölge — Suç saati penceresi)
+23:15–00:33 → Kuzguncuk'tan Sabiha Gökçen'e dönüş
+00:33       → Sabiha Gökçen'de (Ankara uçuşu bekleme)
+02:15       → Ankara'ya döndü</div>
+<div class="signature-block">Veri Kaynağı: Vodafone TR Hukuk Birimi — Yazı No: VDF-2026-2241<br>Çapraz Kontrol: Adli Bilişim Uzmanı Teğmen F.Polat</div>
+</div>`
+    },
+
+    // FOTOĞRAFLAR
+    "foto-01": {
+      id: "foto-01",
+      ad: "Foto-01 — Olay Yeri",
+      ikon: "📸",
+      kilitli: false,
+      tur: "foto",
+      icerik: `<div class="file-content">
+<h1>📸 FOTOĞRAF — FOTO-01</h1>
+<div class="meta-row"><span class="meta-key">Fotoğraf Adı</span><span class="meta-val">OY_001_GelisKoridoru.jpg</span></div>
+<div class="meta-row"><span class="meta-key">Çekim Tarihi</span><span class="meta-val">24.05.2026 — 07:45</span></div>
+<div class="meta-row"><span class="meta-key">Çeken</span><span class="meta-val">Olay Yeri İnceleme Ekibi / Fotoğrafçı: A.Yılmaz</span></div>
+<div class="meta-row"><span class="meta-key">Çözünürlük</span><span class="meta-val">4032 x 3024 px</span></div>
+<hr class="separator">
+<div class="photo-container">
+  <div class="photo-placeholder">
+    <span class="photo-icon">🏠</span>
+    <span class="photo-label">[ GELİŞ KORİDORU — OY_001 ]</span>
+    <span style="font-size:10px;color:var(--text-muted);">Adli Fotoğraf — SINIFLANDIRILMIŞ</span>
+  </div>
+</div>
+<h2>FOTOĞRAF AÇIKLAMASI</h2>
+<p>Daire girişinden çekilmiş genel görüntü. Kapı üst abluka kilidinin açık konumda olduğu görülmektedir. Kapı önünde hafif bir çizilme izi mevcuttur; bu iz kapının sert bir şekilde itilmesinden kaynaklanıyor olabilir. Kauçuk paspasın yerinden kaymış olduğu dikkat çekicidir.</p>
+</div>`
+    },
+
+    "foto-02": {
+      id: "foto-02",
+      ad: "Foto-02 — Çalışma Odası",
+      ikon: "📸",
+      kilitli: false,
+      tur: "foto",
+      icerik: `<div class="file-content">
+<h1>📸 FOTOĞRAF — FOTO-02</h1>
+<div class="meta-row"><span class="meta-key">Fotoğraf Adı</span><span class="meta-val">OY_002_CalismaOdasi.jpg</span></div>
+<div class="meta-row"><span class="meta-key">Çekim Tarihi</span><span class="meta-val">24.05.2026 — 07:52</span></div>
+<hr class="separator">
+<div class="photo-container">
+  <div class="photo-placeholder">
+    <span class="photo-icon">💻</span>
+    <span class="photo-label">[ ÇALIŞMA ODASI — OY_002 ]</span>
+    <span style="font-size:10px;color:var(--text-muted);">Adli Fotoğraf — SINIFLANDIRILMIŞ</span>
+  </div>
+</div>
+<h2>FOTOĞRAF AÇIKLAMASI</h2>
+<p>MacBook Pro'nun bulunduğu çalışma masası görüntüsü. Laptop açık ve ekran kilit ekranında değil; ancak bir uygulama penceresinin kapanma animasyonu yarım kalmış gibi durmaktadır. Masanın üzerinde bir fincan soğumuş çay, birkaç yapışkanlı not kâğıdı ve kurbanın el yazısıyla "PROMETHEUS — acil güncelle" yazdığı bir sticky-note görülmektedir.</p>
+<div class="alert-box">⚠ DİKKAT: El yazısı notu orijinal delil olarak alınmıştır (FZ-2026-0006). "PROMETHEUS" kelimesinin analitik önemi yüksektir.</div>
+</div>`
+    },
+
+    "foto-04": {
+      id: "foto-04",
+      ad: "Foto-04 — Araç [EXIF]",
+      ikon: "📸",
+      kilitli: false,
+      tur: "foto",
+      icerik: `<div class="file-content">
+<h1>📸 FOTOĞRAF — FOTO-04</h1>
+<div class="meta-row"><span class="meta-key">Fotoğraf Adı</span><span class="meta-val">KisiselAlbum_Araba_2024.jpg</span></div>
+<div class="meta-row"><span class="meta-key">Kaynak</span><span class="meta-val">Kurbanın MacBook — /Users/leylakarahan/Pictures/2024/</span></div>
+<div class="meta-row"><span class="meta-key">Dosya Boyutu</span><span class="meta-val">7.4 MB</span></div>
+<hr class="separator">
+<div class="photo-container">
+  <div class="photo-placeholder">
+    <span class="photo-icon">🚗</span>
+    <span class="photo-label">[ KİŞİSEL FOTOĞRAF — ARAÇ — 2024 ]</span>
+    <span style="font-size:10px;color:var(--text-muted);">Adli İmajdan Çıkarılan Kişisel Veri</span>
+  </div>
+</div>
+<p style="font-size:11px;color:var(--text-muted);margin-top:8px;">Kurbanın kendi aracının önünde çekilmiş kişisel bir fotoğraf. Fütüristik tasarımlı bir otomobil arka planda seçilmektedir. Araç plakası pixellanmıştır (gizlilik nedeniyle).</p>
+<div class="exif-block">
+  <h3>◈ EXIF METADATA — OTOMATİK ÇIKARIM</h3>
+  <div class="exif-row"><span class="exif-key">Dosya Adı</span><span class="exif-val">KisiselAlbum_Araba_2024.jpg</span></div>
+  <div class="exif-row"><span class="exif-key">Dosya Boyutu</span><span class="exif-val">7.4 MB (7,549,440 byte)</span></div>
+  <div class="exif-row"><span class="exif-key">Oluşturma Tarihi</span><span class="exif-val special">2024:08:14 16:42:07</span></div>
+  <div class="exif-row"><span class="exif-key">Kamera Modeli</span><span class="exif-val">Apple iPhone 14 Pro</span></div>
+  <div class="exif-row"><span class="exif-key">ISO Değeri</span><span class="exif-val">ISO-64</span></div>
+  <div class="exif-row"><span class="exif-key">Poz Süresi</span><span class="exif-val">1/2000 sn</span></div>
+  <div class="exif-row"><span class="exif-key">Diyafram Değeri</span><span class="exif-val special">f/1.6</span></div>
+  <div class="exif-row"><span class="exif-key">Odak Uzaklığı</span><span class="exif-val">6.86mm (eşdeğer: 26mm)</span></div>
+  <div class="exif-row"><span class="exif-key">Flash</span><span class="exif-val">Kullanılmadı</span></div>
+  <div class="exif-row"><span class="exif-key">GPS Enlem</span><span class="exif-val">41°01'22.4" K</span></div>
+  <div class="exif-row"><span class="exif-key">GPS Boylam</span><span class="exif-val">29°03'11.8" D</span></div>
+  <div class="exif-row"><span class="exif-key">GPS Konum (Yaklaşık)</span><span class="exif-val special">Kuzguncuk Sahil Yolu, Üsküdar</span></div>
+  <div class="exif-row"><span class="exif-key">Renk Profili</span><span class="exif-val">sRGB</span></div>
+  <div class="exif-row"><span class="exif-key">Yazılım</span><span class="exif-val">17.0 (Apple)</span></div>
+  <div class="exif-row"><span class="exif-key">Açıklama (IPTC)</span><span class="exif-val special">"i30N — Sonunda aldım! #fütürizm #hyundai"</span></div>
+  <div class="exif-row"><span class="exif-key">Copyright</span><span class="exif-val">© Leyla Karahan 2024</span></div>
+</div>
+<div class="info-box" style="margin-top:16px;">ℹ METADATA ANALİZ NOTU: Fotoğrafın IPTC açıklama alanında kurbanın araç modeline atıf mevcuttur. GPS koordinatları Kuzguncuk sahil yoluyla örtüşmektedir. Çekim yılı: 2024. Bu veriler dijital profil analizinde değerlendirilebilir.</div>
+</div>`
+    },
+
+    // GİZLİ DOSYALAR
+    "umut-ozel": {
+      id: "umut-ozel",
+      ad: "UMUT — ÖZEL",
+      ikon: "🔒",
+      kilitli: true,
+      sifre: "kuzguncuk2024",
+      sifre_id: "umut",
+      tur: "gizli",
+      icerik: `<div class="file-content">
+<h1>🔓 GİZLİ DOSYA — UMUT ÖZDEMİR KİŞİSEL GÜNLÜĞÜ</h1>
+<div class="meta-row"><span class="meta-key">Erişim Durumu</span><span class="meta-val tag tag-green">ŞİFRE ÇÖZÜLDÜ</span></div>
+<div class="meta-row"><span class="meta-key">Dosya Sahibi</span><span class="meta-val highlight">Umut Özdemir — Kayıp Yazılımcı</span></div>
+<div class="meta-row"><span class="meta-key">Son Değişiklik</span><span class="meta-val">19.05.2026 — 03:14 (sabahın üçü)</span></div>
+<hr class="separator">
+<div class="alert-box">⚠ UYARI: Bu dosya CyberNest şirket sunucusundan değil, yerel bir TrueCrypt konteyneri içinden çıkarılmıştır. Umut Özdemir, yazılım ekibinin tek üyesidir ve 20 Mayıs 2026 tarihinden bu yana kayıptır.</div>
+<h2>UMUT ÖZDEMİR — KİŞİSEL DİJİTAL GÜNLÜK</h2>
+<p style="color:var(--text-muted);font-size:11px;margin-bottom:16px;">[ Dosya aşağıdaki girişleri içermektedir — kronolojik sırayla ]</p>
+
+<h3>[ 04 Nisan 2026 — Pazartesi ]</h3>
+<p>Bugün ofise erken geldim. Leyla ablayla konuşacaktım ama beni görünce suratı gerildi. Caner bey zaten aylar önce şirketten ayrılmıştı (ya da ayrılmak zorunda bırakılmıştı; ikisi de farklı anlatıyor). Ama bugün bir şey fark ettim: sistem loglarında Caner bey'in kullanıcı adı hâlâ aktif. Silinmemiş. Bu garip. Bunu Leyla ablaya söyleyecektim ama fırsat bulamadım.</p>
+
+<h3>[ 12 Nisan 2026 — Salı ]</h3>
+<p>Güvenlik alarmı çaldı. Yönetim panelinde biri PROMETHEUS veritabanına erişmeye çalışmış. IP adresi yurt dışı çıkışlı (Hollanda VPN çıkışı, ama bu tip şeylerin kolayca gizlendiğini biliyorum). Leyla abla bu konuyu "dahili soruşturma" kapsamına aldı. Benden log kayıtlarını korumamı istedi. Korudum.</p>
+
+<h3>[ 28 Nisan 2026 — Pazar ]</h3>
+<p>Artık net görüyorum. Caner bey içeriden birini kullanıyor ya da sistemde bir arka kapı (backdoor) bırakmış. PROMETHEUS şifrelenmiş veri paketlerinin bir bölümünü inceledim; bazı paketler düzenli aralıklarla bilinmeyen bir dış IP'ye sızdırılmıştır. Bu, aktif bir veri hırsızlığı. Leyla abla bunu yasal kanallarla raporlamaya hazırlanıyor. Benden tüm delilleri kopyalayıp harici bir sürücüye almamı istedi. Yaptım.</p>
+
+<h3>[ 10 Mayıs 2026 — Pazar ]</h3>
+<p>Leyla abla ciddi bir adım attı. PROMETHEUS sistemine özel bir ACİL DURUM PROTOKOLÜ gömmüş. Kod adı "HEPHAESTUS". Bu protokol, sistemin dışarıdan ele geçirilmesi hâlinde otomatik olarak kritik verileri şifreler ve yetkili bir e-posta adresine özet rapor gönderir. Leyla abla bu protokolün parolasını bana söylemedi; bence çok iyi etti. "Sadece ben bilirim, hem seni hem kendini korumuş olursun" dedi. Ortaklık kodu PROMETHEUS, bunu biliyorum. Ama şifrenin devamını bilmiyorum.</p>
+
+<h3>[ 18 Mayıs 2026 — Pazartesi ]</h3>
+<p>Bugün Leyla abla arabasıyla geldi işe, yeni aldığı o i30N ile. Aracını o kadar seviyor ki! "Bu arabanın model numarası benim için şans getiriyor" dedi gülerek. Fütürist tasarımı var, biraz karanlık ama şık. Şifrelerinde kullandığını duymuştum (kendisi söyledi bir ara, "işte bu yüzden şifre koymaktan korkmuyorum" diye). Son numaralar ya da saatler de karışıyor galiba. Güvenli bir sistem.</p>
+
+<h3>[ 20 Mayıs 2026 — Çarşamba — SON GİRİŞ ]</h3>
+<p>Bugün işe gelmedim. Gelemezdim. Dün gece beni biri takip etti ya da öyle hissettim. Araç park yerinin kamerasına bakıp bunu kanıtlamak istedim ama kayıtlar silinmişti. Leyla ablayı aradım, telefona bakmadı. SMS attım: "Lütfen dışarı çıkma, tehlike var." Cevap vermedi. Şu an bu günlüğü, bu şifrelenmiş konteynere saklıyorum. Güvenli bir yerde. Eğer bunu okuyorsan; bir şeyler ters gitti demektir.</p>
+<p style="color:var(--accent-red);">Sana bir ipucu: Leyla ablanın kilitli dosyasını açmak istiyorsan, üç şeyi bir araya getirmen gerekiyor. PROMETHEUS kodunu, arabasının modelini ve o gece saat kaçta son kez arandığını. Hepsi burada, bir şekilde.</p>
+<div class="signature-block">Son giriş: 20.05.2026 03:14<br>Dosya durumu: TrueCrypt 7.1a / AES-256 — Çözüldü</div>
+</div>`
+    },
+
+    "leyla-ozel": {
+      id: "leyla-ozel",
+      ad: "LEYLA — ÖZEL",
+      ikon: "🔒",
+      kilitli: true,
+      sifre: "prometheus-i30n-2314",
+      sifre_id: "leyla",
+      tur: "gizli",
+      icerik: `<div class="file-content">
+<h1>🔓 ANA HEDEf DOSYASI — LEYLA KARAHAN KİŞİSEL ARŞİVİ</h1>
+<div class="meta-row"><span class="meta-key">Erişim Durumu</span><span class="meta-val tag tag-green">ŞİFRE ÇÖZÜLDÜ — ANA DELİL DOSYASI</span></div>
+<div class="meta-row"><span class="meta-key">Şifreleme</span><span class="meta-val">AES-256 / HEPHAESTUS Protokolü</span></div>
+<div class="meta-row"><span class="meta-key">Son Güncelleme</span><span class="meta-val">23.05.2026 — 22:07 (ölümden 1 saat önce)</span></div>
+<hr class="separator">
+<div class="alert-box" style="border-color:var(--accent-green);background:rgba(63,185,80,0.06);">✅ HEPHAESTUS PROTOKOLü TETIKLENDI: Bu dosya, sisteme yetkisiz erişim girişimi algılandığında Leyla Karahan tarafından programlanmış otomatik acil durum arşivi olarak mühürlenmiştir.</div>
+
+<h2>BÖLÜM I — CANER SABUNCU: SİSTEMATİK VERİ HIRSIZLIĞI KANITI</h2>
+
+<h3>A. Ağ Erişim Log Kayıtları (PROMETHEUS Sistemi)</h3>
+<table class="data-table">
+  <tr><th>Tarih/Saat</th><th>Kaynak IP</th><th>Hedef</th><th>İşlem</th><th>Sonuç</th></tr>
+  <tr><td>12.04.2026 02:14</td><td>185.220.101.47 (NL-VPN)</td><td>PROMETHEUS/db/core</td><td>SELECT ALL</td><td class="td-red">BAŞARISIZ (2FA)</td></tr>
+  <tr><td>14.04.2026 03:41</td><td>185.220.101.52 (NL-VPN)</td><td>PROMETHEUS/db/core</td><td>SELECT ALL</td><td class="td-red">BAŞARISIZ (2FA)</td></tr>
+  <tr><td>02.05.2026 01:08</td><td>87.246.10.19 (TR — Caner ev IP)</td><td>PROMETHEUS/db/clients</td><td>SELECT * FROM contracts</td><td class="td-red">BAŞARISIZ (IP Bloğu)</td></tr>
+  <tr><td>23.05.2026 23:09</td><td>185.220.101.61 (NL-VPN)</td><td>PROMETHEUS/db/core + /log</td><td>SELECT + DELETE LOGS</td><td class="td-red">KISMİ BAŞARI — 4dk 17sn</td></tr>
+</table>
+<p>23.05.2026 saat 23:09'daki giriş, VPN aracılığıyla gerçekleştirilmiş olmakla birlikte, fiziksel konum verisiyle çakıştırıldığında Caner Sabuncu'nun Kuzguncuk'ta olduğu saate denk gelmektedir. Bu oturum sırasında 4 dakika 17 saniye boyunca veritabanında gezinilmiş ve log silme girişiminde bulunulmuştur.</p>
+
+<h3>B. Log Silme Girişim Kaydı (Forensics)</h3>
+<div class="code-block">[ SİSTEM KAYDI — 23.05.2026 23:09:41 — 23:14:02 ]
+SESSION_START: user=c_sabuncu_legacy | IP=185.220.101.61
+QUERY: SELECT * FROM prometheus_core WHERE classification='TOP'
+QUERY: SELECT * FROM client_contracts WHERE value > 5000000
+QUERY: DELETE FROM access_logs WHERE date > '2026-01-01'
+ERROR: Yetersiz yetki. Log silme işlemi GERİ ALINDI.
+QUERY: SELECT * FROM prometheus_emergency_protocol
+SESSION_FORCE_CLOSE: HEPHAESTUS protokolü devreye girdi.
+[ TÜM OTURUM LOG KAYDI SAKLANDI — SİLİNEMEDİ ]</div>
+
+<h2>BÖLÜM II — KURBANIN KENDİ KALEMİNDEN: OLAY GECESİ NOTU</h2>
+<div class="info-box">
+<p style="color:var(--accent-yellow);font-size:11px;letter-spacing:1px;margin-bottom:8px;">[ Bu not, 23.05.2026 saat 22:07'de bu dosyaya eklendi — el yazısı değil, dijital metin. ]</p>
+<p>"Caner bu gece burada olacak. Biliyorum. Telefon kayıtlarına bakmadım ama GSM konum analizini çalıştırdım. İstanbul'daydı saat 21:00'de. Umut haber vermeye çalışmıştı zaten. Bu dosyayı kaydedip sistemin acil protokolünü aktive ediyorum. Tüm log kayıtlarım bu dosyada. Eğer bunu sen okuyorsan ve ben burada değilsem: katil Caner Sabuncu'dur. Motive: PROMETHEUS proje verileri ve ihale bilgileri. Yöntem: Muhtemelen sistematik. Umarım bu dosyayı bulabilmişsindir."</p>
+</div>
+
+<h2>BÖLÜM III — KATİLİN STRATEJİSİ VE DELİL ZİNCİRİ</h2>
+
+<h3>1. Önceden Hesap Edilmiş Alibi</h3>
+<p>Caner Sabuncu, Ankara Hilton'da rezervasyon yaptırarak kasıtlı bir alibi oluşturmuştur. Ancak GSM konum verileri (bkz: Caner GSM Log dosyası) onun saat 21:02'de zaten İstanbul'da olduğunu kanıtlamaktadır. Ankara'ya gidiş, yalnızca "Ankara'daydım" iddiasının başlangıç noktasını oluşturmak içindir.</p>
+
+<h3>2. Bina Güvenlik Sistemi Manipülasyonu</h3>
+<p>21:30 ile 02:15 arasındaki bina kamera kayıtları silinmiştir. Bu silme işlemi, bina yöneticisinin bilgisayarına yapılan uzak erişimle gerçekleştirilmiştir. Kullanılan teknik ve yaklaşım Caner'in operasyonel kabiliyetiyle uyumludur.</p>
+
+<h3>3. Kurbanın Etkisiz Hâle Getirilmesi</h3>
+<p>Otopsi raporunda izler hâlinde tespit edilen ketamin (bkz: Otopsi Özeti — Bölüm B), kurbanın bilinci kapanmadan önce fiziksel direnç göstermesini engellemiş olabilir. Zolpidem ise şarap ile karıştırılarak kurbanın içeceğine eklenmiştir. Kadehin jant kenarındaki yabancı parmak izi bu hipotezi desteklemektedir.</p>
+
+<h3>4. Dijital İz Silme Girişimi</h3>
+<p>Saat 23:09'da sisteme sızan Caner, acil durum protokol kayıtlarını ve erişim loglarını silmeye çalışmıştır. HEPHAESTUS protokolü bu girişimi engellemiş ve tüm logları değiştirilemez formatta kayıt altına almıştır. Bu, kurbanın kendi tasarladığı güvenlik protokolünün sonunda onu öldürenden daha akıllı olduğunun kanıtıdır.</p>
+
+<h2>BÖLÜM IV — SONUÇ VE DOĞRULAMA</h2>
+<table class="data-table">
+  <tr><th>Delil</th><th>Kaynak</th><th>Sonuç</th></tr>
+  <tr><td>GSM Konum Verisi</td><td>Caner GSM Log</td><td class="td-red">Caner 22:41 ve 23:09'da Kuzguncuk'ta</td></tr>
+  <tr><td>Ağ Erişim Logu</td><td>PROMETHEUS Sistem Kaydı</td><td class="td-red">23:09'da sisteme girdi, log silmeye çalıştı</td></tr>
+  <tr><td>Kurban Notu</td><td>Bu Dosya (22:07)</td><td class="td-red">Kurban Caner'i öngördü ve kayıt altına aldı</td></tr>
+  <tr><td>Otopsi Bulgusu</td><td>AT-2026-0524-LK</td><td class="td-red">Zolpidem + Ketamin kombinasyonu harici müdahale</td></tr>
+  <tr><td>Parmak İzi</td><td>Kriptolu SSD + Şarap Kadehi</td><td class="td-yellow">Analiz beklemede</td></tr>
+  <tr><td>Caner'in Alibi'si</td><td>Hilton Rezervasyonu</td><td class="td-red">ÇÜRÜTÜLDÜ (GSM ile)</td></tr>
+</table>
+
+<div style="margin-top:30px;border:2px solid var(--accent-green);padding:24px;text-align:center;background:rgba(63,185,80,0.05);">
+  <div style="color:var(--accent-green);font-size:22px;letter-spacing:4px;margin-bottom:12px;">✅ VAKA ÇÖZÜLDÜ</div>
+  <div style="color:var(--text-primary);font-size:14px;letter-spacing:2px;margin-bottom:8px;">KATİL: CANER SABUNCU</div>
+  <div style="color:var(--text-muted);font-size:11px;line-height:1.8;">Motive: PROMETHEUS projesinin veri ve ihale bilgilerini ele geçirmek.<br>
+  Yöntem: Önceden planlanmış alibi, kimyasal etkisiz hâle getirme, dijital iz silme.<br>
+  Delil: GSM konum çakışması, sistem erişim logu, kurbanın önceden bıraktığı dijital tanıklık.</div>
+</div>
+<div class="signature-block" style="margin-top:20px;">HEPHAESTUS Protokolü — Otomatik Arşiv<br>Leyla Karahan tarafından 23.05.2026 22:07'de mühürlenmiştir.</div>
+</div>`
+    },
+
+    // SES KAYITLARI / SORGULAR
+    "sorgu-caner": {
+      id: "sorgu-caner",
+      ad: "Sorgu — Caner Sabuncu",
+      ikon: "🎙️",
+      kilitli: false,
+      tur: "sorgu",
+      icerik: `<div class="file-content">
+<h1>🎙️ SORGU TUTANAĞI — CANER SABUNCU</h1>
+<div class="meta-row"><span class="meta-key">Sorgu Tarihi</span><span class="meta-val">24.05.2026 — 15:00</span></div>
+<div class="meta-row"><span class="meta-key">Yer</span><span class="meta-val">TÜSAB Sorgulama Odası — 2B</span></div>
+<div class="meta-row"><span class="meta-key">Sorgulayan</span><span class="meta-val">Müfettiş E.Sönmez, Müfettiş K.Acar</span></div>
+<div class="meta-row"><span class="meta-key">Avukat Durumu</span><span class="meta-val tag tag-yellow">Avukatsız (talebi reddetti)</span></div>
+<hr class="separator">
+<h2>TUTANAK METNİ (Tam Döküm)</h2>
+<p><strong style="color:var(--accent-cyan);">SÖNMEZ:</strong> Sabuncu Bey, nerede oturuyorsunuz?</p>
+<p><strong style="color:var(--accent-yellow);">CANER:</strong> Kadıköy, Moda'da. Neden soruyorsunuz?</p>
+<p><strong style="color:var(--accent-cyan);">SÖNMEZ:</strong> Dün gece saat 21:00 ile 24:00 arasında neredeydiniz?</p>
+<p><strong style="color:var(--accent-yellow);">CANER:</strong> Söyledim zaten. Ankara'daydım. Hilton Esenboğa'da. Oda 412. Faturamı bile gösterebilirim. Daha ne istiyorsunuz?</p>
+<p><strong style="color:var(--accent-cyan);">ACAR:</strong> Ankara'ya neden gitmiştiniz?</p>
+<p><strong style="color:var(--accent-yellow);">CANER:</strong> İş görüşmesi. Bir savunma şirketiyle. Büyük bir proje var, detay veremem, NDAnın kapsamında.</p>
+<p><strong style="color:var(--accent-cyan);">SÖNMEZ:</strong> Uçuşla mı gitmiştiniz?</p>
+<p><strong style="color:var(--accent-yellow);">CANER:</strong> Evet. Sabiha Gökçen'den öğleden sonra kalktım. İki buçuk saat önce oradaydım.</p>
+<p><strong style="color:var(--accent-cyan);">ACAR:</strong> Hangi saat?</p>
+<p><strong style="color:var(--accent-yellow);">CANER:</strong> [duraklama] 16:30 civarı kalkış vardı. Ama tam saati söyleyemem şu an.</p>
+<p><strong style="color:var(--accent-cyan);">SÖNMEZ:</strong> Dönüş ne zaman?</p>
+<p><strong style="color:var(--accent-yellow);">CANER:</strong> Bugün sabah. 06:30 kalkışıyla döndüm. Sabah 08:15'te Sabiha'daydım.</p>
+<p><strong style="color:var(--accent-cyan);">ACAR:</strong> Ankara'dayken başka kimlerle görüştünüz?</p>
+<p><strong style="color:var(--accent-yellow);">CANER:</strong> Sadece şirket temsilcisiyle. Onu da ismini veremem NDA nedeniyle. Anlayın siz de, hassas bir sektör.</p>
+<p><strong style="color:var(--accent-cyan);">SÖNMEZ:</strong> Sabuncu Bey, telefon şirketinizden aldığımız GSM verileri sizi dün gece saat 22:41'de Kuzguncuk'ta gösteriyor. Bunu nasıl açıklarsınız?</p>
+<p><strong style="color:var(--accent-yellow);">CANER:</strong> [uzun sessizlik] Bu... mümkün değil. GSM verileri hatalı olabilir. Baz istasyonları her zaman doğru konumu göstermez. Siz de biliyorsunuzdur bunu.</p>
+<p><strong style="color:var(--accent-cyan);">ACAR:</strong> Saat 23:09'da ise Leyla Karahan'ın şirket sistemine VPN aracılığıyla girilmiş. Bu sizin eski kullanıcı adınızla yapılmış. Yorum?</p>
+<p><strong style="color:var(--accent-yellow);">CANER:</strong> Ben... hayır. Ben oraya girmedim. Eski hesabım sildirmiştim. Biri benim adıma kullanmış olabilir. Hacking yapılmıştır.</p>
+<p><strong style="color:var(--accent-cyan);">SÖNMEZ:</strong> Sizi o hesap için arandığı bir numara biliyor musunuz?</p>
+<p><strong style="color:var(--accent-yellow);">CANER:</strong> Hayır, bilmiyorum. Şimdi avukat istiyorum. Devam etmeyeceğim.</p>
+<div class="alert-box">⚠ NOT: Caner Sabuncu bu noktadan sonra ifade vermekten vazgeçmiştir. Avukatı Av. Taşkın Erdem saat 16:22'de hazır olmuştur. Bir sonraki sorgu, 25.05.2026 tarihine ertelenmiştir.</div>
+<div class="signature-block">Tutanak onaylayan: Müfettiş E.Sönmez / K.Acar<br>Ses kaydı: SES-2026-0524-CS01.wav (arşivde)</div>
+</div>`
+    },
+
+    "sorgu-umut": {
+      id: "sorgu-umut",
+      ad: "Sorgu — Umut (Kayıp)",
+      ikon: "🎙️",
+      kilitli: false,
+      tur: "sorgu",
+      icerik: `<div class="file-content">
+<h1>🎙️ KAYIP KİŞİ DOSYASI — UMUT ÖZDEMİR</h1>
+<div class="meta-row"><span class="meta-key">T.C. Kimlik No</span><span class="meta-val">31***5517</span></div>
+<div class="meta-row"><span class="meta-key">Doğum Tarihi</span><span class="meta-val">14.11.1997</span></div>
+<div class="meta-row"><span class="meta-key">Son Görülme</span><span class="meta-val highlight">20.05.2026 — CyberNest Ofisi (Akşam 18:00 civarı)</span></div>
+<div class="meta-row"><span class="meta-key">Kayıp Bildirimi</span><span class="meta-val">21.05.2026 — İstanbul İl EGM</span></div>
+<div class="meta-row"><span class="meta-key">Durum</span><span class="meta-val tag tag-red">KAYIP — ARAŞTIRMA DEVAM EDİYOR</span></div>
+<hr class="separator">
+<h2>KİŞİSEL BİLGİLER</h2>
+<p>Umut Özdemir, CyberNest A.Ş.'nin kıdemli yazılım mühendisidir. 2022 yılında şirkete katılmıştır. PROMETHEUS projesinin teknik mimarisini büyük ölçüde o geliştirmiştir. Leyla Karahan ile yakın çalışma ilişkisi mevcuttur. Kaybından önce "biriyle takip edildiğine" dair kaygılarını Leyla Karahan'a ilettiği bilinmektedir.</p>
+<h2>SON BİLİNEN HAREKETLERİ</h2>
+<table class="data-table">
+  <tr><th>Tarih/Saat</th><th>Konum/Eylem</th><th>Kaynak</th></tr>
+  <tr><td>20.05 10:00</td><td>CyberNest Ofisi — Sisteme giriş yaptı</td><td>VPN log kaydı</td></tr>
+  <tr><td>20.05 11:22</td><td>Leyla Karahan'a mesaj: "Biri beni takip ediyor"</td><td>iMessage log</td></tr>
+  <tr><td>20.05 15:44</td><td>CyberNest Ofisi — Harici SSD'yi bağladı, veri kopyaladı</td><td>USB mount log</td></tr>
+  <tr><td>20.05 18:03</td><td>Ofis kartıyla kapıdan çıkış</td><td>Bina erişim kartı log</td></tr>
+  <tr><td>20.05 18:30</td><td>Kadıköy metro istasyonu kamerasında görüntülendi</td><td>EGM MOBESE</td></tr>
+  <tr><td>20.05 18:30</td><td>SONRASI: HİÇBİR KAYIT YOK</td><td>—</td></tr>
+</table>
+<div class="info-box">ℹ İLGİNÇ DETAY: Umut Özdemir'in GSM hattı 20 Mayıs 2026 saat 18:45'ten itibaren pasife geçmiştir. Telefonu o andan itibaren hiçbir baz istasyonuna bağlanmamıştır. Cihaz ya kapatılmış ya da SIM kartı çıkarılmıştır.</div>
+<h2>YAKIN ÇEVRE BEYANLARI</h2>
+<p>Umut'un annesi H.Özdemir: "Oğlum son haftalarda çok gergin ve sinirli görünüyordu. Bazı insanlardan korktuğunu söyledi ama kimden korktuğunu bana söylemedi. Sadece 'annecim, bir şeyler ters giderse, her şey bilgisayarımda kayıtlı' dedi."</p>
+<p>CyberNest ekip arkadaşı Y.Kara: "Umut, Caner bey çıktıktan sonra çok değişmişti. Sürekli sistem loglarını kontrol ederdi, ofis saatlerinin dışında. 'Birinin içeri girdiğini biliyorum, kanıtı topluyorum' diyordu."</p>
+<div class="signature-block">Kayıp Kişi Soruşturma Dosyası: EGM-IST-2026-KY-0312<br>Koordinasyon: Müfettiş E.Sönmez</div>
+</div>`
+    }
+
+  }
+};
+
+// ========== STATE ==========
+const STATE = {
+  acikSekmeler: [],
+  aktifSekme: null,
+  dosyaDurumlari: {}
+};
+
+// DOM referansları
+const tabBar = document.getElementById('tab-bar');
+const content = document.getElementById('content');
+const navTree = document.getElementById('nav-tree');
+const notesArea = document.getElementById('notes-area');
+const sidebar = document.getElementById('sidebar');
+const notesPanel = document.getElementById('notes-panel');
+const overlay = document.getElementById('overlay');
+
+// ========== NOTLAR - localStorage ==========
+function initNotes() {
+  const saved = localStorage.getItem('adli_notlar');
+  if (saved) notesArea.value = saved;
+  notesArea.addEventListener('input', () => {
+    localStorage.setItem('adli_notlar', notesArea.value);
+  });
+}
+
+// ========== SAAT ==========
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('tr-TR', {hour12: false});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ========== NAV TREE ==========
+const AGAC_YAPISI = [
+  {
+    baslik: "📂 DAVA DOSYALARI",
+    dosyalar: ["olay-yeri-raporu", "otopsi-ozeti"]
+  },
+  {
+    baslik: "📂 ŞÜPHELİLER",
+    dosyalar: ["suphe-caner", "suphe-melis", "suphe-burak"]
+  },
+  {
+    baslik: "📂 TELEFON KAYITLARI",
+    dosyalar: ["leyla-gsm", "caner-gsm"]
+  },
+  {
+    baslik: "📂 FOTOĞRAFLAR",
+    dosyalar: ["foto-01", "foto-02", "foto-04"]
+  },
+  {
+    baslik: "📂 GİZLİ DOSYALAR [KİLİTLİ]",
+    dosyalar: ["umut-ozel", "leyla-ozel"]
+  },
+  {
+    baslik: "📂 SES KAYITLARI",
+    dosyalar: ["sorgu-caner", "sorgu-umut"]
+  }
+];
+
+function renderNavTree() {
+  navTree.innerHTML = '';
+  AGAC_YAPISI.forEach((klasor, ki) => {
+    const folderDiv = document.createElement('div');
+    folderDiv.className = 'tree-folder';
+
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'tree-folder-label';
+    labelDiv.innerHTML = `<span class="arrow">▶</span>${klasor.baslik}`;
+    labelDiv.addEventListener('click', () => {
+      folderDiv.classList.toggle('open');
+    });
+
+    const childrenDiv = document.createElement('div');
+    childrenDiv.className = 'tree-folder-children';
+
+    klasor.dosyalar.forEach(dosyaId => {
+      const dosya = OYUN_VERISI.dosyalar[dosyaId];
+      if (!dosya) return;
+      const fileDiv = document.createElement('div');
+      fileDiv.className = 'tree-file';
+      fileDiv.id = 'nav-' + dosyaId;
+      fileDiv.addEventListener('click', () => {
+        dosyaAc(dosyaId);
+        if (window.innerWidth <= 768) closeAllDrawers();
+      });
+      updateNavFile(fileDiv, dosya);
+      childrenDiv.appendChild(fileDiv);
+    });
+
+    folderDiv.appendChild(labelDiv);
+    folderDiv.appendChild(childrenDiv);
+    navTree.appendChild(folderDiv);
+  });
+}
+
+function updateNavFile(fileDiv, dosya) {
+  let badge = '';
+  if (dosya.kilitli) {
+    badge = '<span class="lock-badge">KİLİTLİ</span>';
+  } else if (STATE.dosyaDurumlari[dosya.id] === 'cozuldu') {
+    badge = '<span class="solved-badge">ÇÖZÜLDÜ</span>';
+  }
+  fileDiv.innerHTML = `<span class="file-icon">${dosya.kilitli && STATE.dosyaDurumlari[dosya.id] !== 'cozuldu' ? '🔒' : dosya.ikon}</span><span>${dosya.ad}</span>${badge}`;
+}
+
+function navGuncelle(dosyaId) {
+  const dosya = OYUN_VERISI.dosyalar[dosyaId];
+  const fileDiv = document.getElementById('nav-' + dosyaId);
+  if (fileDiv && dosya) updateNavFile(fileDiv, dosya);
+}
+
+// ========== TABS ==========
+function dosyaAc(dosyaId) {
+  const dosya = OYUN_VERISI.dosyalar[dosyaId];
+  if (!dosya) return;
+
+  // Zaten açık mı?
+  if (STATE.acikSekmeler.includes(dosyaId)) {
+    sekmeAktifle(dosyaId);
+    return;
+  }
+
+  STATE.acikSekmeler.push(dosyaId);
+  sekmeEkle(dosyaId, dosya);
+  sekmeAktifle(dosyaId);
+}
+
+function sekmeEkle(dosyaId, dosya) {
+  const tab = document.createElement('div');
+  tab.className = 'tab';
+  tab.id = 'tab-' + dosyaId;
+  tab.innerHTML = `<span class="file-icon">${dosya.ikon}</span><span class="tab-name">${dosya.ad}</span><span class="tab-close" onclick="sekmeKapat('${dosyaId}', event)">×</span>`;
+  tab.addEventListener('click', (e) => {
+    if (!e.target.classList.contains('tab-close')) sekmeAktifle(dosyaId);
+  });
+  tabBar.appendChild(tab);
+}
+
+function sekmeAktifle(dosyaId) {
+  STATE.aktifSekme = dosyaId;
+
+  // Tab aktif
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const activeTab = document.getElementById('tab-' + dosyaId);
+  if (activeTab) {
+    activeTab.classList.add('active');
+    activeTab.scrollIntoView({behavior: 'smooth', inline: 'nearest'});
+  }
+
+  // Nav aktif
+  document.querySelectorAll('.tree-file').forEach(f => f.classList.remove('active'));
+  const navFile = document.getElementById('nav-' + dosyaId);
+  if (navFile) navFile.classList.add('active');
+
+  // İçerik render
+  icerikRender(dosyaId);
+}
+
+function sekmeKapat(dosyaId, e) {
+  e && e.stopPropagation();
+  const idx = STATE.acikSekmeler.indexOf(dosyaId);
+  if (idx === -1) return;
+  STATE.acikSekmeler.splice(idx, 1);
+
+  const tab = document.getElementById('tab-' + dosyaId);
+  if (tab) tab.remove();
+
+  if (STATE.aktifSekme === dosyaId) {
+    if (STATE.acikSekmeler.length > 0) {
+      sekmeAktifle(STATE.acikSekmeler[Math.max(0, idx - 1)]);
+    } else {
+      STATE.aktifSekme = null;
+      content.innerHTML = document.getElementById('welcome').outerHTML;
+    }
+  }
+}
+
+// ========== İÇERİK RENDER ==========
+function icerikRender(dosyaId) {
+  const dosya = OYUN_VERISI.dosyalar[dosyaId];
+  if (!dosya) return;
+
+  if (dosya.kilitli && STATE.dosyaDurumlari[dosyaId] !== 'cozuldu') {
+    kilitliEkranRender(dosyaId, dosya);
+  } else {
+    content.innerHTML = dosya.icerik;
+  }
+}
+
+function kilitliEkranRender(dosyaId, dosya) {
+  content.innerHTML = `
+  <div class="locked-container">
+    <div class="lock-icon">🔒</div>
+    <div class="locked-title">ERİŞİM ENGELLENDİ</div>
+    <div class="locked-subtitle">DOSYA KRİPTOLU — Bu dosyaya erişmek için doğru parolayı girmeniz gerekmektedir. Sistem sizi yönlendirmeyecektir.</div>
+    <div class="password-input-wrapper">
+      <input type="password" class="password-input" id="pw-input-${dosyaId}" placeholder="ŞİFREYİ GİRİN..." autocomplete="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')sifreDene('${dosyaId}')">
+      <button class="decrypt-btn" onclick="sifreDene('${dosyaId}')">ŞİFREYİ ÇÖZ</button>
+    </div>
+    <div class="password-error" id="pw-error-${dosyaId}"></div>
+    <div class="password-hint">[ ${dosya.ad.toUpperCase()} — AES-256 ŞİFRELİ DOSYA ]</div>
+  </div>`;
+}
+
+function sifreDene(dosyaId) {
+  const dosya = OYUN_VERISI.dosyalar[dosyaId];
+  const input = document.getElementById('pw-input-' + dosyaId);
+  const errorDiv = document.getElementById('pw-error-' + dosyaId);
+  if (!input) return;
+
+  const girilen = input.value.toLowerCase().trim();
+  const dogru = dosya.sifre.toLowerCase().trim();
+
+  if (girilen === dogru) {
+    // Doğru!
+    input.classList.add('success');
+    errorDiv.textContent = '✅ ŞİFRE DOĞRU — Dosya açılıyor...';
+    errorDiv.style.color = 'var(--accent-green)';
+
+    STATE.dosyaDurumlari[dosyaId] = 'cozuldu';
+    dosya.kilitli = false;
+
+    // Durum güncelle
+    durumuGuncelle(dosyaId);
+    navGuncelle(dosyaId);
+
+    setTimeout(() => {
+      icerikRender(dosyaId);
+    }, 800);
+  } else {
+    input.classList.add('error');
+    errorDiv.textContent = '✗ HATALI ŞİFRE — ERİŞİM REDDEDİLDİ';
+    errorDiv.style.color = 'var(--accent-red)';
+    setTimeout(() => input.classList.remove('error'), 500);
+  }
+}
+
+function durumuGuncelle(dosyaId) {
+  const dosya = OYUN_VERISI.dosyalar[dosyaId];
+  if (dosyaId === 'umut-ozel') {
+    document.getElementById('s1-status').textContent = 'ÇÖZÜLDÜ';
+    document.getElementById('s1-status').style.color = 'var(--accent-green)';
+  }
+  if (dosyaId === 'leyla-ozel') {
+    document.getElementById('s2-status').textContent = 'ÇÖZÜLDÜ';
+    document.getElementById('s2-status').style.color = 'var(--accent-green)';
+    document.getElementById('s2-dot').className = 'dot dot-green';
+    document.getElementById('solve-label').innerHTML = '<span style="color:var(--accent-green);letter-spacing:2px;animation:victoryPulse 2s infinite;">✅ VAKA ÇÖZÜLDÜ — KATİL: CANER SABUNCU</span>';
+  }
+}
+
+// ========== MOBİL ==========
+function toggleSidebar() {
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('active');
+  notesPanel.classList.remove('open');
+}
+
+function toggleNotes() {
+  notesPanel.classList.toggle('open');
+  overlay.classList.toggle('active');
+  sidebar.classList.remove('open');
+}
+
+function closeAllDrawers() {
+  sidebar.classList.remove('open');
+  notesPanel.classList.remove('open');
+  overlay.classList.remove('active');
+}
+
+// ========== BAŞLANGIÇ ==========
+renderNavTree();
+initNotes();
+
+// İlk klasörleri aç
+document.querySelectorAll('.tree-folder').forEach((f, i) => {
+  if (i === 0) f.classList.add('open');
+});
+</script>
+</body>
+</html>
