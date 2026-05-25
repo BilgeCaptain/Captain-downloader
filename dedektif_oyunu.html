@@ -1,0 +1,2460 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROMETHEUS // Dedektif İstasyonu v2.1</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+
+:root {
+  --bg-primary: #080c10;
+  --bg-secondary: #0d1117;
+  --bg-panel: #0a0f15;
+  --bg-card: #0f1520;
+  --accent-primary: #00d4ff;
+  --accent-secondary: #ff3366;
+  --accent-warn: #ffaa00;
+  --accent-green: #00ff88;
+  --text-primary: #c8d8e8;
+  --text-secondary: #6a8090;
+  --text-dim: #3a4a55;
+  --border-color: #1a2535;
+  --border-accent: #1e3a4a;
+  --glow-blue: 0 0 20px rgba(0,212,255,0.3);
+  --glow-red: 0 0 20px rgba(255,51,102,0.3);
+  --glow-green: 0 0 20px rgba(0,255,136,0.2);
+  --scanline: rgba(0,212,255,0.03);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  width:100%; height:100%;
+  overflow:hidden;
+  background: var(--bg-primary);
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--text-primary);
+  cursor: crosshair;
+}
+
+/* CRT effect overlay */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--scanline) 2px,
+    var(--scanline) 4px
+  );
+  pointer-events:none;
+  animation: scanMove 8s linear infinite;
+}
+body::after {
+  content:'';
+  position:fixed; inset:0; z-index:9998;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+  pointer-events:none;
+}
+
+@keyframes scanMove {
+  0%{background-position:0 0}
+  100%{background-position:0 100px}
+}
+
+/* Glitch animation */
+@keyframes glitch1 {
+  0%,90%,100%{transform:translateX(0) skew(0)}
+  91%{transform:translateX(-3px) skew(-1deg)}
+  93%{transform:translateX(3px) skew(1deg)}
+  95%{transform:translateX(-1px)}
+  97%{transform:translateX(2px)}
+}
+@keyframes glitch2 {
+  0%,85%,100%{clip-path:none;transform:translateX(0)}
+  86%{clip-path:polygon(0 20%,100% 20%,100% 30%,0 30%);transform:translateX(4px)}
+  88%{clip-path:polygon(0 60%,100% 60%,100% 70%,0 70%);transform:translateX(-4px)}
+  90%{clip-path:none;transform:translateX(0)}
+}
+@keyframes pulse {
+  0%,100%{opacity:1} 50%{opacity:0.5}
+}
+@keyframes blink {
+  0%,100%{opacity:1} 49%{opacity:1} 50%{opacity:0}
+}
+@keyframes fadeIn {
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes slideLeft {
+  from{opacity:0;transform:translateX(20px)}
+  to{opacity:1;transform:translateX(0)}
+}
+@keyframes typewriter {
+  from{width:0} to{width:100%}
+}
+@keyframes flicker {
+  0%,100%{opacity:1}
+  92%{opacity:1}
+  93%{opacity:0.3}
+  94%{opacity:1}
+  96%{opacity:0.7}
+  97%{opacity:1}
+}
+
+/* Boot screen */
+#bootScreen {
+  position:fixed; inset:0; z-index:10000;
+  background:#000;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  font-family:'Share Tech Mono',monospace;
+  transition: opacity 0.8s;
+}
+#bootScreen.hidden { opacity:0; pointer-events:none; }
+.boot-logo {
+  font-family:'Orbitron',monospace;
+  font-size:3rem; font-weight:900;
+  color: var(--accent-primary);
+  text-shadow: var(--glow-blue);
+  letter-spacing:0.3em;
+  animation: flicker 4s infinite;
+  margin-bottom:2rem;
+}
+.boot-sub {
+  color: var(--text-secondary);
+  font-size:0.85rem;
+  letter-spacing:0.2em;
+  margin-bottom:3rem;
+}
+.boot-log {
+  width:500px; max-width:90vw;
+  font-size:0.75rem;
+  color: #3a8a6a;
+  line-height:1.8;
+}
+.boot-log .ok { color: var(--accent-green); }
+.boot-log .warn { color: var(--accent-warn); }
+.boot-log .err { color: var(--accent-secondary); }
+.boot-progress {
+  width:500px; max-width:90vw;
+  height:3px;
+  background: #111;
+  border:1px solid #1a3a2a;
+  margin-top:1.5rem;
+  overflow:hidden;
+}
+.boot-bar {
+  height:100%;
+  background: linear-gradient(90deg, var(--accent-green), var(--accent-primary));
+  width:0%;
+  transition: width 0.1s;
+  box-shadow: 0 0 10px var(--accent-primary);
+}
+
+/* Main app */
+#app {
+  position:fixed; inset:0;
+  display:flex; flex-direction:column;
+  opacity:0; transition: opacity 0.8s;
+}
+#app.visible { opacity:1; }
+
+/* Top bar */
+#topbar {
+  height:38px;
+  background: linear-gradient(180deg, #0c1520 0%, #080e18 100%);
+  border-bottom:1px solid var(--border-accent);
+  display:flex; align-items:center;
+  padding:0 16px;
+  flex-shrink:0;
+  position:relative;
+  z-index:100;
+}
+.tb-logo {
+  font-family:'Orbitron',monospace;
+  font-size:0.7rem; font-weight:700;
+  color: var(--accent-primary);
+  letter-spacing:0.15em;
+  margin-right:24px;
+  text-shadow: var(--glow-blue);
+  animation: glitch1 6s infinite;
+}
+.tb-sep { color: var(--text-dim); margin:0 8px; }
+.tb-status {
+  font-size:0.65rem;
+  color: var(--text-secondary);
+  letter-spacing:0.1em;
+}
+.tb-status .dot {
+  display:inline-block; width:6px; height:6px;
+  border-radius:50%; margin-right:5px;
+  background: var(--accent-green);
+  box-shadow: var(--glow-green);
+  animation: pulse 2s infinite;
+}
+.tb-right {
+  margin-left:auto;
+  display:flex; align-items:center; gap:20px;
+}
+.tb-time {
+  font-size:0.7rem;
+  color: var(--accent-primary);
+  letter-spacing:0.1em;
+  font-family:'Orbitron',monospace;
+}
+.tb-alert {
+  font-size:0.65rem;
+  color: var(--accent-secondary);
+  padding:2px 8px;
+  border:1px solid var(--accent-secondary);
+  border-radius:2px;
+  animation: pulse 1.5s infinite;
+  cursor:pointer;
+}
+.tb-case {
+  font-size:0.65rem;
+  color: var(--accent-warn);
+  letter-spacing:0.08em;
+}
+
+/* Main layout */
+#main {
+  flex:1;
+  display:flex;
+  overflow:hidden;
+}
+
+/* Left sidebar - file system */
+#sidebar {
+  width:220px;
+  background: var(--bg-panel);
+  border-right:1px solid var(--border-color);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.sidebar-header {
+  padding:10px 14px;
+  font-size:0.65rem;
+  color: var(--text-secondary);
+  letter-spacing:0.15em;
+  border-bottom:1px solid var(--border-color);
+  display:flex; align-items:center; gap:8px;
+}
+.sidebar-header::before {
+  content:'';
+  width:4px; height:4px;
+  background: var(--accent-primary);
+  border-radius:50%;
+  flex-shrink:0;
+}
+#fileTree {
+  flex:1; overflow-y:auto; padding:8px 0;
+}
+#fileTree::-webkit-scrollbar { width:4px; }
+#fileTree::-webkit-scrollbar-track { background:transparent; }
+#fileTree::-webkit-scrollbar-thumb { background: var(--border-accent); }
+
+.folder {
+  user-select:none;
+}
+.folder-label {
+  padding:5px 14px;
+  font-size:0.7rem;
+  color: var(--text-secondary);
+  letter-spacing:0.08em;
+  cursor:pointer;
+  display:flex; align-items:center; gap:6px;
+  transition:all 0.15s;
+}
+.folder-label:hover { color: var(--accent-primary); background:rgba(0,212,255,0.04); }
+.folder-label .icon { font-size:0.65rem; transition:transform 0.2s; }
+.folder-label.open .icon { transform:rotate(90deg); }
+.folder-label .badge {
+  margin-left:auto;
+  font-size:0.55rem;
+  padding:1px 5px;
+  background: rgba(255,51,102,0.2);
+  color: var(--accent-secondary);
+  border-radius:8px;
+}
+.folder-children { display:none; }
+.folder-children.visible { display:block; }
+
+.file-item {
+  padding:4px 14px 4px 28px;
+  font-size:0.68rem;
+  color: var(--text-secondary);
+  cursor:pointer;
+  display:flex; align-items:center; gap:7px;
+  transition:all 0.15s;
+  border-left:2px solid transparent;
+  margin:1px 0;
+}
+.file-item:hover {
+  color: var(--text-primary);
+  background: rgba(0,212,255,0.06);
+  border-left-color: var(--accent-primary);
+}
+.file-item.active {
+  color: var(--accent-primary);
+  background: rgba(0,212,255,0.1);
+  border-left-color: var(--accent-primary);
+}
+.file-item.locked { color: var(--accent-secondary); }
+.file-item.locked:hover { color: var(--accent-secondary); border-left-color:var(--accent-secondary); }
+.file-item.new-found { animation: pulse 2s 3; }
+.file-item .file-icon { font-size:0.65rem; }
+
+/* Center - content viewer */
+#viewer {
+  flex:1;
+  display:flex; flex-direction:column;
+  overflow:hidden;
+  background: var(--bg-secondary);
+}
+.viewer-tabs {
+  display:flex; align-items:center;
+  background: var(--bg-panel);
+  border-bottom:1px solid var(--border-color);
+  padding:0 12px;
+  gap:2px;
+  flex-shrink:0;
+  overflow-x:auto;
+}
+.viewer-tabs::-webkit-scrollbar { height:3px; }
+.viewer-tabs::-webkit-scrollbar-thumb { background:var(--border-accent); }
+.vtab {
+  padding:8px 14px;
+  font-size:0.65rem;
+  color: var(--text-dim);
+  cursor:pointer;
+  border-bottom:2px solid transparent;
+  white-space:nowrap;
+  transition:all 0.15s;
+  letter-spacing:0.05em;
+}
+.vtab:hover { color:var(--text-secondary); }
+.vtab.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+#viewerContent {
+  flex:1; overflow-y:auto; padding:20px;
+}
+#viewerContent::-webkit-scrollbar { width:5px; }
+#viewerContent::-webkit-scrollbar-thumb { background:var(--border-accent); }
+
+/* Right panel - evidence board */
+#rightPanel {
+  width:260px;
+  background: var(--bg-panel);
+  border-left:1px solid var(--border-color);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.rp-section {
+  padding:10px 14px;
+  font-size:0.65rem;
+  color: var(--text-secondary);
+  letter-spacing:0.15em;
+  border-bottom:1px solid var(--border-color);
+  display:flex; align-items:center; gap:8px;
+}
+.rp-section::before {
+  content:'';
+  width:4px; height:4px;
+  background: var(--accent-secondary);
+  border-radius:50%;
+}
+#evidenceBoard {
+  flex:1; overflow-y:auto; padding:10px;
+}
+#evidenceBoard::-webkit-scrollbar { width:4px; }
+#evidenceBoard::-webkit-scrollbar-thumb { background:var(--border-accent); }
+
+.evidence-item {
+  background: var(--bg-card);
+  border:1px solid var(--border-color);
+  border-radius:4px;
+  padding:10px 12px;
+  margin-bottom:8px;
+  cursor:pointer;
+  transition:all 0.2s;
+  animation: fadeIn 0.3s ease;
+}
+.evidence-item:hover {
+  border-color: var(--accent-primary);
+  background: rgba(0,212,255,0.05);
+  transform:translateX(-2px);
+}
+.evidence-item.critical {
+  border-color: var(--accent-secondary);
+  background: rgba(255,51,102,0.05);
+}
+.ev-tag {
+  font-size:0.55rem;
+  color: var(--accent-primary);
+  letter-spacing:0.1em;
+  margin-bottom:4px;
+}
+.evidence-item.critical .ev-tag { color:var(--accent-secondary); }
+.ev-title {
+  font-size:0.7rem;
+  color: var(--text-primary);
+  font-family:'Rajdhani',sans-serif;
+  font-weight:600;
+  margin-bottom:3px;
+}
+.ev-note {
+  font-size:0.62rem;
+  color: var(--text-secondary);
+  line-height:1.5;
+}
+
+/* Notes section */
+#notesSection {
+  border-top:1px solid var(--border-color);
+  padding:10px;
+  flex-shrink:0;
+}
+.notes-label {
+  font-size:0.6rem;
+  color: var(--text-secondary);
+  letter-spacing:0.12em;
+  margin-bottom:6px;
+}
+#notesArea {
+  width:100%;
+  height:80px;
+  background: var(--bg-card);
+  border:1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family:'Share Tech Mono',monospace;
+  font-size:0.65rem;
+  padding:7px;
+  resize:none;
+  outline:none;
+  border-radius:3px;
+  line-height:1.5;
+}
+#notesArea:focus { border-color:var(--accent-primary); }
+
+/* Accusation button */
+#accuseBtn {
+  margin:8px 10px;
+  padding:10px;
+  background: rgba(255,51,102,0.1);
+  border:1px solid var(--accent-secondary);
+  color: var(--accent-secondary);
+  font-family:'Orbitron',monospace;
+  font-size:0.65rem;
+  font-weight:700;
+  letter-spacing:0.15em;
+  cursor:pointer;
+  border-radius:3px;
+  width:calc(100% - 20px);
+  transition:all 0.2s;
+}
+#accuseBtn:hover {
+  background: rgba(255,51,102,0.2);
+  box-shadow: var(--glow-red);
+}
+
+/* Document styles */
+.doc-container {
+  animation: fadeIn 0.4s ease;
+  max-width:680px;
+  margin:0 auto;
+}
+.doc-header {
+  border-bottom:2px solid var(--border-accent);
+  padding-bottom:16px;
+  margin-bottom:20px;
+}
+.doc-agency {
+  font-family:'Orbitron',monospace;
+  font-size:0.65rem;
+  color: var(--accent-primary);
+  letter-spacing:0.2em;
+  margin-bottom:6px;
+}
+.doc-title {
+  font-family:'Rajdhani',sans-serif;
+  font-size:1.6rem;
+  font-weight:700;
+  color: var(--text-primary);
+  margin-bottom:8px;
+  line-height:1.2;
+}
+.doc-meta {
+  display:flex; gap:20px; flex-wrap:wrap;
+}
+.doc-meta span {
+  font-size:0.65rem;
+  color: var(--text-secondary);
+}
+.doc-meta span strong {
+  color: var(--accent-primary);
+}
+.doc-body {
+  font-size:0.78rem;
+  line-height:1.8;
+  color: var(--text-primary);
+}
+.doc-body p { margin-bottom:12px; }
+.doc-body h3 {
+  font-family:'Rajdhani',sans-serif;
+  font-size:1rem;
+  color: var(--accent-primary);
+  margin:20px 0 8px;
+  letter-spacing:0.08em;
+  border-left:3px solid var(--accent-primary);
+  padding-left:10px;
+}
+.doc-body .highlight {
+  background: rgba(255,170,0,0.1);
+  border:1px solid rgba(255,170,0,0.3);
+  padding:2px 6px;
+  border-radius:2px;
+  color: var(--accent-warn);
+}
+.doc-body .redacted {
+  background: var(--text-primary);
+  color: var(--text-primary);
+  padding:0 4px;
+  user-select:none;
+}
+.doc-body table {
+  width:100%;
+  border-collapse:collapse;
+  margin:12px 0;
+  font-size:0.72rem;
+}
+.doc-body th {
+  padding:7px 10px;
+  background: rgba(0,212,255,0.1);
+  color: var(--accent-primary);
+  text-align:left;
+  border:1px solid var(--border-accent);
+  letter-spacing:0.06em;
+}
+.doc-body td {
+  padding:6px 10px;
+  border:1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+.doc-body tr:hover td { color:var(--text-primary); background:rgba(255,255,255,0.02); }
+
+/* Suspect profile */
+.suspect-grid {
+  display:grid; grid-template-columns:160px 1fr;
+  gap:20px; margin-bottom:20px;
+}
+.suspect-photo {
+  width:160px; height:200px;
+  background: var(--bg-card);
+  border:2px solid var(--border-accent);
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+  overflow:hidden;
+}
+.suspect-photo .photo-placeholder {
+  font-size:4rem;
+  filter:grayscale(0.5);
+}
+.suspect-photo .photo-overlay {
+  position:absolute; inset:0;
+  background: repeating-linear-gradient(
+    45deg, transparent, transparent 3px,
+    rgba(0,212,255,0.03) 3px, rgba(0,212,255,0.03) 4px
+  );
+}
+.suspect-photo .photo-tag {
+  position:absolute; bottom:0; left:0; right:0;
+  background:rgba(0,0,0,0.8);
+  padding:4px 8px;
+  font-size:0.6rem;
+  color: var(--accent-primary);
+  letter-spacing:0.1em;
+}
+.suspect-stats {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:8px; height:fit-content;
+}
+.stat-item {
+  background: var(--bg-card);
+  border:1px solid var(--border-color);
+  padding:8px 12px;
+  border-radius:3px;
+}
+.stat-label {
+  font-size:0.58rem;
+  color: var(--text-dim);
+  letter-spacing:0.1em;
+  margin-bottom:3px;
+}
+.stat-value {
+  font-size:0.75rem;
+  color: var(--text-primary);
+  font-family:'Rajdhani',sans-serif;
+  font-weight:600;
+}
+.stat-value.danger { color:var(--accent-secondary); }
+.stat-value.warn { color:var(--accent-warn); }
+.stat-value.ok { color:var(--accent-green); }
+
+/* Camera viewer */
+.cam-container {
+  animation: fadeIn 0.4s ease;
+}
+.cam-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px;
+}
+.cam-title {
+  font-family:'Rajdhani',sans-serif;
+  font-size:1.2rem; font-weight:700;
+  color: var(--text-primary);
+}
+.cam-status {
+  font-size:0.65rem;
+  color: var(--accent-secondary);
+  animation: pulse 1s infinite;
+}
+.cam-screen {
+  width:100%;
+  aspect-ratio:16/9;
+  background:#000;
+  border:2px solid var(--border-accent);
+  position:relative;
+  overflow:hidden;
+  cursor:zoom-in;
+}
+.cam-screen .cam-scene {
+  width:100%; height:100%;
+  font-size:5rem;
+  display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(135deg, #050a0f 0%, #0a1520 50%, #050a10 100%);
+  filter: contrast(1.2) brightness(0.8);
+  animation: flicker 5s infinite;
+}
+.cam-overlay {
+  position:absolute; inset:0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 4px,
+    rgba(0,30,10,0.2) 4px, rgba(0,30,10,0.2) 5px
+  );
+  mix-blend-mode: overlay;
+}
+.cam-info {
+  position:absolute; top:8px; left:8px;
+  font-size:0.65rem; color:#0f8;
+  text-shadow:0 0 6px #0f8;
+  line-height:1.6;
+}
+.cam-ts {
+  position:absolute; bottom:8px; right:8px;
+  font-size:0.7rem; color:#0f8;
+  text-shadow:0 0 6px #0f8;
+  animation: blink 1s step-end infinite;
+}
+.cam-corner {
+  position:absolute;
+  width:15px; height:15px;
+  border-color:#0f8;
+  border-style:solid;
+}
+.cam-corner.tl { top:6px;left:6px; border-width:2px 0 0 2px; }
+.cam-corner.tr { top:6px;right:6px; border-width:2px 2px 0 0; }
+.cam-corner.bl { bottom:6px;left:6px; border-width:0 0 2px 2px; }
+.cam-corner.br { bottom:6px;right:6px; border-width:0 2px 2px 0; }
+
+.cam-events {
+  margin-top:12px;
+}
+.cam-events-label {
+  font-size:0.62rem;
+  color: var(--text-secondary);
+  letter-spacing:0.12em;
+  margin-bottom:8px;
+}
+.cam-event-item {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:8px;
+  border:1px solid var(--border-color);
+  border-radius:3px;
+  margin-bottom:6px;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.cam-event-item:hover {
+  border-color:var(--accent-primary);
+  background:rgba(0,212,255,0.04);
+}
+.cam-event-time {
+  font-size:0.68rem;
+  color: var(--accent-primary);
+  white-space:nowrap;
+  width:55px;
+}
+.cam-event-desc {
+  font-size:0.68rem;
+  color: var(--text-secondary);
+  line-height:1.4;
+}
+.cam-event-item.critical .cam-event-time { color:var(--accent-secondary); }
+.cam-event-item.critical .cam-event-desc { color:var(--text-primary); }
+
+/* Phone log */
+.phone-log {
+  font-size:0.72rem;
+}
+.phone-entry {
+  display:flex;
+  border-bottom:1px solid var(--border-color);
+  padding:8px 6px;
+  gap:12px;
+  transition:background 0.15s;
+}
+.phone-entry:hover { background:rgba(255,255,255,0.02); }
+.phone-entry .pe-time { color:var(--accent-primary); width:70px; flex-shrink:0; }
+.phone-entry .pe-from { color:var(--text-secondary); width:120px; flex-shrink:0; }
+.phone-entry .pe-to { color:var(--text-secondary); width:120px; flex-shrink:0; }
+.phone-entry .pe-dur { color:var(--accent-green); width:60px; flex-shrink:0; }
+.phone-entry .pe-flag { color:var(--accent-secondary); }
+
+/* Password screen */
+.pw-screen {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; padding:60px 20px;
+  animation: fadeIn 0.4s ease;
+}
+.pw-icon { font-size:3rem; margin-bottom:16px; }
+.pw-title {
+  font-family:'Orbitron',monospace;
+  font-size:1rem; font-weight:700;
+  color: var(--accent-secondary);
+  letter-spacing:0.2em;
+  margin-bottom:8px;
+}
+.pw-sub {
+  font-size:0.7rem;
+  color: var(--text-secondary);
+  margin-bottom:24px;
+  text-align:center;
+}
+.pw-input-wrap {
+  display:flex; gap:8px;
+}
+.pw-input {
+  background: var(--bg-card);
+  border:1px solid var(--border-accent);
+  color: var(--accent-primary);
+  font-family:'Share Tech Mono',monospace;
+  font-size:1rem;
+  padding:10px 16px;
+  border-radius:3px;
+  outline:none;
+  letter-spacing:0.2em;
+  width:200px;
+  text-align:center;
+}
+.pw-input:focus { border-color:var(--accent-primary); box-shadow:var(--glow-blue); }
+.pw-btn {
+  padding:10px 20px;
+  background: rgba(0,212,255,0.1);
+  border:1px solid var(--accent-primary);
+  color: var(--accent-primary);
+  font-family:'Share Tech Mono',monospace;
+  font-size:0.75rem;
+  cursor:pointer;
+  border-radius:3px;
+  transition:all 0.2s;
+}
+.pw-btn:hover { background:rgba(0,212,255,0.2); box-shadow:var(--glow-blue); }
+.pw-error {
+  font-size:0.65rem;
+  color:var(--accent-secondary);
+  margin-top:12px;
+  animation: pulse 0.5s;
+}
+.pw-hint {
+  margin-top:16px;
+  font-size:0.62rem;
+  color:var(--text-dim);
+  font-style:italic;
+}
+
+/* Welcome screen */
+.welcome-screen {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; height:100%;
+  animation: fadeIn 0.6s ease;
+}
+.ws-logo {
+  font-family:'Orbitron',monospace;
+  font-size:2rem; font-weight:900;
+  color: var(--accent-primary);
+  text-shadow: var(--glow-blue);
+  letter-spacing:0.3em;
+  margin-bottom:8px;
+  animation: glitch1 8s infinite;
+}
+.ws-sub {
+  font-size:0.75rem;
+  color: var(--text-secondary);
+  letter-spacing:0.2em;
+  margin-bottom:40px;
+}
+.ws-brief {
+  max-width:540px;
+  background: var(--bg-card);
+  border:1px solid var(--border-accent);
+  padding:20px 24px;
+  border-radius:4px;
+  margin-bottom:24px;
+}
+.ws-brief-title {
+  font-size:0.65rem;
+  color: var(--accent-secondary);
+  letter-spacing:0.15em;
+  margin-bottom:10px;
+  animation: pulse 2s infinite;
+}
+.ws-brief-body {
+  font-size:0.75rem;
+  color: var(--text-primary);
+  line-height:1.8;
+}
+.ws-brief-body strong { color:var(--accent-warn); }
+.ws-start-btn {
+  padding:14px 40px;
+  background: rgba(0,212,255,0.1);
+  border:1px solid var(--accent-primary);
+  color: var(--accent-primary);
+  font-family:'Orbitron',monospace;
+  font-size:0.8rem;
+  font-weight:700;
+  letter-spacing:0.2em;
+  cursor:pointer;
+  border-radius:3px;
+  transition:all 0.3s;
+}
+.ws-start-btn:hover {
+  background:rgba(0,212,255,0.2);
+  box-shadow: var(--glow-blue), 0 0 40px rgba(0,212,255,0.1);
+  transform:translateY(-2px);
+}
+
+/* Photo viewer */
+.photo-viewer {
+  animation: fadeIn 0.4s ease;
+}
+.photo-frame {
+  width:100%;
+  border:2px solid var(--border-accent);
+  background: var(--bg-card);
+  position:relative;
+  overflow:hidden;
+  cursor:zoom-in;
+  display:flex; align-items:center; justify-content:center;
+  min-height:300px;
+  font-size:6rem;
+}
+.photo-frame.zoomed { cursor:zoom-out; }
+.photo-frame .photo-overlay-scan {
+  position:absolute; inset:0;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 3px,
+    rgba(0,0,0,0.1) 3px, rgba(0,0,0,0.1) 4px
+  );
+  pointer-events:none;
+}
+.photo-annotations {
+  margin-top:12px;
+}
+.annotation {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:8px 10px;
+  background: var(--bg-card);
+  border-left:2px solid var(--accent-warn);
+  margin-bottom:6px;
+  font-size:0.68rem;
+  color: var(--text-secondary);
+  border-radius:0 3px 3px 0;
+}
+.annotation .ann-num {
+  color: var(--accent-warn);
+  font-weight:700;
+  flex-shrink:0;
+}
+.add-evidence-btn {
+  padding:7px 14px;
+  background: rgba(0,255,136,0.08);
+  border:1px solid var(--accent-green);
+  color: var(--accent-green);
+  font-family:'Share Tech Mono',monospace;
+  font-size:0.65rem;
+  cursor:pointer;
+  border-radius:3px;
+  margin-top:10px;
+  transition:all 0.2s;
+}
+.add-evidence-btn:hover { background:rgba(0,255,136,0.15); }
+.add-evidence-btn:disabled {
+  opacity:0.4; cursor:default;
+  border-color:var(--text-dim); color:var(--text-dim);
+}
+
+/* Accusation modal */
+.modal-overlay {
+  position:fixed; inset:0; z-index:9000;
+  background: rgba(0,0,0,0.85);
+  display:flex; align-items:center; justify-content:center;
+  animation: fadeIn 0.3s ease;
+}
+.modal {
+  background: var(--bg-card);
+  border:2px solid var(--accent-secondary);
+  border-radius:6px;
+  padding:30px 36px;
+  max-width:480px;
+  width:90%;
+  box-shadow: var(--glow-red), 0 20px 60px rgba(0,0,0,0.8);
+}
+.modal-title {
+  font-family:'Orbitron',monospace;
+  font-size:1rem; font-weight:700;
+  color: var(--accent-secondary);
+  letter-spacing:0.2em;
+  margin-bottom:6px;
+}
+.modal-sub {
+  font-size:0.7rem;
+  color: var(--text-secondary);
+  margin-bottom:20px;
+}
+.suspect-choices {
+  display:flex; flex-direction:column; gap:8px;
+  margin-bottom:20px;
+}
+.suspect-choice {
+  padding:12px 16px;
+  background: var(--bg-secondary);
+  border:1px solid var(--border-color);
+  border-radius:4px;
+  cursor:pointer;
+  transition:all 0.2s;
+  display:flex; align-items:center; gap:12px;
+}
+.suspect-choice:hover {
+  border-color:var(--accent-secondary);
+  background:rgba(255,51,102,0.06);
+}
+.suspect-choice.selected {
+  border-color:var(--accent-secondary);
+  background:rgba(255,51,102,0.12);
+}
+.sc-photo { font-size:1.8rem; }
+.sc-name {
+  font-family:'Rajdhani',sans-serif;
+  font-size:1rem; font-weight:600;
+  color:var(--text-primary);
+}
+.sc-role { font-size:0.65rem; color:var(--text-secondary); }
+.modal-btns { display:flex; gap:10px; justify-content:flex-end; }
+.modal-btn {
+  padding:9px 20px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:0.72rem;
+  cursor:pointer;
+  border-radius:3px;
+  transition:all 0.2s;
+}
+.modal-btn.cancel {
+  background:transparent;
+  border:1px solid var(--text-dim);
+  color:var(--text-secondary);
+}
+.modal-btn.cancel:hover { border-color:var(--text-secondary); }
+.modal-btn.confirm {
+  background:rgba(255,51,102,0.15);
+  border:1px solid var(--accent-secondary);
+  color:var(--accent-secondary);
+}
+.modal-btn.confirm:hover { background:rgba(255,51,102,0.25); }
+
+/* Ending screen */
+.ending-screen {
+  position:fixed; inset:0; z-index:8000;
+  background:#000;
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column;
+  animation: fadeIn 1s ease;
+  padding:40px;
+}
+.ending-result {
+  font-family:'Orbitron',monospace;
+  font-size:2.5rem; font-weight:900;
+  letter-spacing:0.3em;
+  margin-bottom:16px;
+  text-align:center;
+}
+.ending-result.correct { color:var(--accent-green); text-shadow:var(--glow-green); }
+.ending-result.wrong { color:var(--accent-secondary); text-shadow:var(--glow-red); }
+.ending-body {
+  max-width:560px;
+  font-size:0.85rem;
+  color:var(--text-primary);
+  line-height:2;
+  text-align:center;
+  margin-bottom:30px;
+}
+.ending-detail {
+  max-width:600px;
+  background: var(--bg-card);
+  border:1px solid var(--border-accent);
+  padding:20px 28px;
+  border-radius:4px;
+  font-size:0.75rem;
+  color:var(--text-secondary);
+  line-height:1.8;
+  margin-bottom:30px;
+  text-align:left;
+}
+.ending-detail h3 {
+  color:var(--accent-primary);
+  font-family:'Rajdhani',sans-serif;
+  font-size:1rem;
+  margin-bottom:10px;
+}
+.ending-restart {
+  padding:12px 36px;
+  background:rgba(0,212,255,0.1);
+  border:1px solid var(--accent-primary);
+  color:var(--accent-primary);
+  font-family:'Orbitron',monospace;
+  font-size:0.75rem;
+  letter-spacing:0.15em;
+  cursor:pointer;
+  border-radius:3px;
+  transition:all 0.2s;
+}
+.ending-restart:hover { background:rgba(0,212,255,0.2); box-shadow:var(--glow-blue); }
+
+/* Typing cursor */
+.typing-cursor::after {
+  content:'█';
+  animation: blink 1s step-end infinite;
+}
+
+/* Timeline */
+.timeline {
+  position:relative;
+  padding-left:20px;
+}
+.timeline::before {
+  content:'';
+  position:absolute; left:7px; top:0; bottom:0;
+  width:1px; background:var(--border-accent);
+}
+.tl-item {
+  position:relative;
+  margin-bottom:16px;
+  padding:10px 14px;
+  background:var(--bg-card);
+  border:1px solid var(--border-color);
+  border-radius:3px;
+  animation: slideLeft 0.3s ease;
+}
+.tl-item::before {
+  content:'';
+  position:absolute; left:-17px; top:14px;
+  width:8px; height:8px;
+  border-radius:50%;
+  background:var(--accent-primary);
+  border:2px solid var(--bg-secondary);
+}
+.tl-item.critical::before { background:var(--accent-secondary); }
+.tl-time {
+  font-size:0.65rem;
+  color:var(--accent-primary);
+  margin-bottom:4px;
+}
+.tl-item.critical .tl-time { color:var(--accent-secondary); }
+.tl-text {
+  font-size:0.72rem;
+  color:var(--text-primary);
+  line-height:1.5;
+}
+.tl-who {
+  font-size:0.62rem;
+  color:var(--text-dim);
+  margin-top:4px;
+}
+
+/* Audio player mock */
+.audio-player {
+  background:var(--bg-card);
+  border:1px solid var(--border-accent);
+  padding:16px;
+  border-radius:4px;
+  margin:12px 0;
+}
+.ap-title {
+  font-size:0.7rem;
+  color:var(--text-secondary);
+  margin-bottom:10px;
+  letter-spacing:0.08em;
+}
+.ap-controls {
+  display:flex; align-items:center; gap:12px;
+}
+.ap-play {
+  width:36px; height:36px;
+  border-radius:50%;
+  background:rgba(0,212,255,0.1);
+  border:1px solid var(--accent-primary);
+  color:var(--accent-primary);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+  font-size:0.8rem;
+  transition:all 0.2s;
+  flex-shrink:0;
+}
+.ap-play:hover { background:rgba(0,212,255,0.2); }
+.ap-waveform {
+  flex:1; height:30px;
+  background:var(--bg-secondary);
+  border-radius:2px;
+  display:flex; align-items:center;
+  padding:0 6px; gap:2px;
+  overflow:hidden;
+}
+.ap-bar {
+  width:3px; background:var(--accent-primary);
+  opacity:0.6;
+  border-radius:1px;
+  flex-shrink:0;
+}
+.ap-time {
+  font-size:0.65rem;
+  color:var(--text-secondary);
+  white-space:nowrap;
+}
+.ap-transcript {
+  margin-top:12px;
+  padding:10px;
+  background:var(--bg-secondary);
+  border-left:2px solid var(--accent-primary);
+  font-size:0.7rem;
+  color:var(--text-secondary);
+  line-height:1.7;
+  font-style:italic;
+}
+
+/* Lab report specific */
+.lab-section {
+  background:var(--bg-card);
+  border:1px solid var(--border-color);
+  padding:14px;
+  border-radius:3px;
+  margin-bottom:12px;
+}
+.lab-section-title {
+  font-family:'Rajdhani',sans-serif;
+  font-size:0.9rem; font-weight:600;
+  color:var(--accent-primary);
+  margin-bottom:10px;
+  letter-spacing:0.08em;
+}
+.lab-row {
+  display:flex; justify-content:space-between;
+  padding:5px 0;
+  border-bottom:1px solid var(--border-color);
+  font-size:0.7rem;
+}
+.lab-row:last-child { border-bottom:none; }
+.lab-key { color:var(--text-secondary); }
+.lab-val { color:var(--text-primary); }
+.lab-val.match { color:var(--accent-green); }
+.lab-val.nomatch { color:var(--accent-secondary); }
+.lab-val.inconclusive { color:var(--accent-warn); }
+
+/* Scrollbar global */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border-accent); border-radius:2px; }
+
+/* Notification toast */
+.toast {
+  position:fixed; bottom:20px; right:20px;
+  background:var(--bg-card);
+  border:1px solid var(--accent-primary);
+  padding:12px 18px;
+  border-radius:4px;
+  font-size:0.7rem;
+  color:var(--text-primary);
+  z-index:9500;
+  animation: slideLeft 0.3s ease;
+  box-shadow: var(--glow-blue);
+  max-width:280px;
+}
+.toast.warn { border-color:var(--accent-warn); box-shadow:0 0 20px rgba(255,170,0,0.3); }
+.toast.err { border-color:var(--accent-secondary); box-shadow:var(--glow-red); }
+.toast-title { color:var(--accent-primary); font-size:0.65rem; letter-spacing:0.1em; margin-bottom:4px; }
+.toast.warn .toast-title { color:var(--accent-warn); }
+.toast.err .toast-title { color:var(--accent-secondary); }
+</style>
+</head>
+<body>
+
+<!-- BOOT SCREEN -->
+<div id="bootScreen">
+  <div class="boot-logo">PROMETHEUS</div>
+  <div class="boot-sub">ADVANCED FORENSIC INTELLIGENCE SYSTEM // v2.1.4</div>
+  <div class="boot-log" id="bootLog"></div>
+  <div class="boot-progress"><div class="boot-bar" id="bootBar"></div></div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <!-- Top bar -->
+  <div id="topbar">
+    <div class="tb-logo">PROMETHEUS</div>
+    <span class="tb-sep">//</span>
+    <div class="tb-status"><span class="dot"></span>BAĞLI</div>
+    <span class="tb-sep">|</span>
+    <div class="tb-status">AJN: DT-7734</div>
+    <span class="tb-sep">|</span>
+    <div class="tb-case">DAVA: <span style="color:var(--accent-secondary)">CİNAYET-2024-0118</span></div>
+    <div class="tb-right">
+      <div class="tb-alert" onclick="showAlert()">⚠ SINIFLANDIRILMIŞ</div>
+      <div class="tb-time" id="clockDisplay">--:--:--</div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div id="main">
+    <!-- Left sidebar -->
+    <div id="sidebar">
+      <div class="sidebar-header">DOSYA SİSTEMİ</div>
+      <div id="fileTree"></div>
+    </div>
+
+    <!-- Center viewer -->
+    <div id="viewer">
+      <div class="viewer-tabs" id="viewerTabs">
+        <div class="vtab active" data-id="welcome">ANASAYFA</div>
+      </div>
+      <div id="viewerContent"></div>
+    </div>
+
+    <!-- Right panel -->
+    <div id="rightPanel">
+      <div class="rp-section">DELİL PANOSU</div>
+      <div id="evidenceBoard"></div>
+      <div id="notesSection">
+        <div class="notes-label">// NOTLARIM</div>
+        <textarea id="notesArea" placeholder="Bulgularını buraya not et..."></textarea>
+      </div>
+      <button id="accuseBtn" onclick="openAccuse()">⚖ SUÇLAMA YAP</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// GAME DATA
+// ============================================================
+const GAME = {
+  killer: 'leyla',
+  unlockedFiles: new Set(['welcome']),
+  collectedEvidence: [],
+  openTabs: ['welcome'],
+  activeTab: 'welcome',
+  passwords: {
+    'leyla_private': 'KIRAZLIBAHCE',
+    'lab_encrypted': 'DNA4471',
+    'ali_private':   'ARSENAL47'
+  },
+  solvedPasswords: new Set(),
+  gameStarted: false
+};
+
+// ============================================================
+// FILE SYSTEM DATA
+// ============================================================
+const FILE_SYSTEM = [
+  {
+    id:'case_files', label:'DAVA DOSYALARI', icon:'📁',
+    children:[
+      {id:'olay_raporu',   label:'Olay Yeri Raporu',  icon:'📄'},
+      {id:'otopsi',        label:'Otopsi Raporu',     icon:'🔬'},
+      {id:'lab_raporu',    label:'Laboratuvar',       icon:'🧪'},
+      {id:'lab_encrypted', label:'ŞİFRELİ LAB [KİLİTLİ]', icon:'🔒', locked:true},
+      {id:'timeline',      label:'Zaman Çizelgesi',  icon:'⏱'},
+    ]
+  },
+  {
+    id:'suspects', label:'ŞÜPHELİLER', icon:'👥', badge:'4',
+    children:[
+      {id:'leyla',   label:'LEYLA KARAHAN',  icon:'👤'},
+      {id:'murat',   label:'MURAT YILMAZ',   icon:'👤'},
+      {id:'sinem',   label:'SİNEM DOĞAN',    icon:'👤'},
+      {id:'tarkan',  label:'TARKAN ARSLAN',  icon:'👤'},
+    ]
+  },
+  {
+    id:'cameras', label:'GÜVENLİK KAMERALARI', icon:'📹',
+    children:[
+      {id:'cam_giris',    label:'Giriş Holü – 22:10',   icon:'🎥'},
+      {id:'cam_asansor',  label:'Asansör – 22:28',      icon:'🎥'},
+      {id:'cam_otopark',  label:'Otopark – 22:45',      icon:'🎥'},
+      {id:'cam_mutfak',   label:'Mutfak Koridoru – 23:00', icon:'🎥'},
+      {id:'cam_cikis',    label:'Arka Çıkış – 23:15',   icon:'🎥'},
+    ]
+  },
+  {
+    id:'phone_records', label:'TELEFON KAYITLARI', icon:'📱',
+    children:[
+      {id:'phone_leyla',  label:'Leyla – GSM Kayıtları', icon:'📞'},
+      {id:'phone_murat',  label:'Murat – GSM Kayıtları', icon:'📞'},
+      {id:'phone_sinem',  label:'Sinem – GSM Kayıtları', icon:'📞'},
+    ]
+  },
+  {
+    id:'photos', label:'FOTOĞRAFLAR', icon:'🖼',
+    children:[
+      {id:'photo_olay',    label:'Olay Yeri #1',      icon:'📷'},
+      {id:'photo_parmak',  label:'Parmak İzi Kıyası', icon:'📷'},
+      {id:'photo_kesik',   label:'Kesik Analizi',     icon:'📷'},
+      {id:'photo_ayiz',    label:'Ayak İzi',          icon:'📷'},
+    ]
+  },
+  {
+    id:'secret', label:'GİZLİ DOSYALAR', icon:'🔐',
+    children:[
+      {id:'leyla_private', label:'LEYLA – ÖZEL [KİLİTLİ]', icon:'🔒', locked:true},
+      {id:'ali_private',   label:'ALİ – ÖZEL [KİLİTLİ]',  icon:'🔒', locked:true},
+      {id:'zoraki_itiraf', label:'[GİZLİ] Zoraki İtiraf',  icon:'⚠️', hidden:true},
+    ]
+  },
+  {
+    id:'audio', label:'SES KAYITLARI', icon:'🎵',
+    children:[
+      {id:'audio_sorgu_leyla',  label:'Sorgu – Leyla',  icon:'🎙'},
+      {id:'audio_sorgu_murat',  label:'Sorgu – Murat',  icon:'🎙'},
+      {id:'audio_sorgu_tarkan', label:'Sorgu – Tarkan', icon:'🎙'},
+      {id:'audio_telefon',      label:'Ele Geçirilen Çağrı', icon:'🎙'},
+    ]
+  },
+];
+
+// ============================================================
+// CONTENT RENDERERS
+// ============================================================
+const CONTENT = {
+
+welcome: () => `
+<div class="welcome-screen">
+  <div class="ws-logo">PROMETHEUS</div>
+  <div class="ws-sub">ADVANCED FORENSIC INTELLIGENCE SYSTEM</div>
+  <div class="ws-brief">
+    <div class="ws-brief-title">// ACİL DAVA BRIFING'İ — GİZLİ</div>
+    <div class="ws-brief-body">
+      Tarih: <strong>18 Ocak 2024 — 23:47</strong><br>
+      Lokasyon: <strong>İstanbul, Beşiktaş — Akarsu Lüks Apartmanı, Kat 9</strong><br><br>
+      Kurban: <strong>Profesör Kemal Yıldız</strong> (57), Boğaziçi Üniversitesi Kimya Bölüm Başkanı.<br>
+      Olay yeri: Mutfak. Kemal Yıldız küt cisimle kafasına vurularak hayatını kaybetmiştir.<br><br>
+      O gece binada dört kişi bulunmaktaydı. Bunların hepsi şüphelidir.<br><br>
+      <strong>Görevi:</strong> Delilleri incele, şüphelileri sorgula, katili tespit et.
+    </div>
+  </div>
+  <button class="ws-start-btn" onclick="startGame()">▶ SORUŞTURMAYA BAŞLA</button>
+</div>`,
+
+olay_raporu: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">İSTANBUL EMNİYET MÜDÜRLÜĞÜ // CİNAYET BÜROSU</div>
+    <div class="doc-title">OLAY YERİ İNCELEME RAPORU</div>
+    <div class="doc-meta">
+      <span>Dava No: <strong>CIN-2024-0118</strong></span>
+      <span>Tarih: <strong>18.01.2024</strong></span>
+      <span>Soruşturmacı: <strong>Kom. Yrd. Ateş</strong></span>
+      <span>Durum: <strong style="color:var(--accent-secondary)">AÇIK</strong></span>
+    </div>
+  </div>
+  <div class="doc-body">
+    <h3>OLAY ÖZETİ</h3>
+    <p>Saat 23:47'de 9. katta oturan komşu Fahriye Hanım, koridorda bir çığlık duyduğunu ihbar etmiştir. İlk ekipler 00:03'te mahalle yerinde geldiğinde Kemal Yıldız'ı mutfak zeminine yüz üstü düşmüş hâlde bulmuşlardır. Tıbbi müdahale geç kalmıştır; kurban olay yerinde hayatını kaybetmiştir.</p>
+    <h3>OLAY YERİ TESPİTLERİ</h3>
+    <p>Mutfak kapısı içeriden kilitli değildi. Kapı sürgüsünde <span class="highlight">kısmen silinmiş parmak izi</span> tespit edilmiştir. Tezgâh üzerinde iki bardak çay bulunmakta olup yalnızca birine ağız teması gerçekleşmiştir. Çöp kovasında <span class="highlight">yırtık bir zarf</span> bulunmuştur; üzerindeki el yazısı analizde devam etmektedir.</p>
+    <h3>KULLANILAN ALET</h3>
+    <p>Kurbanın yanı sıra mermer tezgah üzerinde <span class="highlight">granit havan eli bulunmuş</span>; üzerinde saç teli ve kan izi tespit edilmiştir. Havan eli kurbanın kendi mutfağına aittir; ancak parmak izi silindikten sonra bırakıldığı değerlendirilmektedir.</p>
+    <h3>İLK BULGULAR</h3>
+    <table>
+      <tr><th>Bulgu</th><th>Konum</th><th>Durum</th></tr>
+      <tr><td>Granit havan eli (kan izli)</td><td>Mutfak tezgahı</td><td style="color:var(--accent-warn)">Analiz devam</td></tr>
+      <tr><td>Çay bardağı (ağız izi)</td><td>Mutfak tezgahı</td><td style="color:var(--accent-green)">DNA alındı</td></tr>
+      <tr><td>Yırtık zarf</td><td>Çöp kovası</td><td style="color:var(--accent-warn)">Analiz devam</td></tr>
+      <tr><td>Bayan saçı (10 cm)</td><td>Havan elinin yanı</td><td style="color:var(--accent-green)">DNA alındı</td></tr>
+      <tr><td>Kırmızı topuklu ayak izi</td><td>Mutfak zemini (kan)</td><td style="color:var(--accent-secondary)">KRİTİK</td></tr>
+      <tr><td>Kırık tırnak (kırmızı oje)</td><td>Kurbanın sol eli</td><td style="color:var(--accent-secondary)">KRİTİK</td></tr>
+      <tr><td>Parfüm kokusu (yabancı)</td><td>Olay yeri genel</td><td style="color:var(--text-dim)">Kayıt altına alındı</td></tr>
+    </table>
+    <h3>ŞÜPHELİLER (O Gece Binada Bulunanlar)</h3>
+    <table>
+      <tr><th>İsim</th><th>Kat</th><th>Kemal ile İlişki</th></tr>
+      <tr><td>Leyla Karahan</td><td>9</td><td>Komşu / Eski öğrenci</td></tr>
+      <tr><td>Murat Yılmaz</td><td>7</td><td>Apartman görevlisi</td></tr>
+      <tr><td>Sinem Doğan</td><td>11</td><td>Komşu / Daire sahibi</td></tr>
+      <tr><td>Tarkan Arslan</td><td>B1</td><td>Güvenlik görevlisi</td></tr>
+    </table>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('Olay Yeri: Kırmızı topuklu ayak izi + kırık kırmızı ojeli tırnak — kadın şüpheli işareti','olay_raporu')" id="ev_olay">
+    + Delili Panoya Ekle
+  </button>
+</div>`,
+
+otopsi: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">İSTANBUL ADLİ TIP KURUMU</div>
+    <div class="doc-title">OTOPSİ & ÖLÜM NEDENİ RAPORU</div>
+    <div class="doc-meta">
+      <span>Kurban: <strong>Kemal Yıldız</strong></span>
+      <span>Doğum: <strong>1967</strong></span>
+      <span>Adli Tabip: <strong>Dr. Meliha Çetin</strong></span>
+    </div>
+  </div>
+  <div class="doc-body">
+    <h3>ÖLÜM NEDENİ</h3>
+    <p>Künt kafa travması sonucu oluşan subdural hematom. Kurbanın sol temporal bölgesine arkadan sağa doğru şiddetli bir darbe indirilmiştir. Darbede kullanılan nesnenin ağırlığının 400–700 gram arasında, yüzeyinin <span class="highlight">granit benzeri düzensiz</span> dokuda olduğu değerlendirilmektedir.</p>
+    <h3>ÖLÜM ZAMANI</h3>
+    <p>Vücut sıcaklığı ve rijör mortis bulgularına göre ölümün <span class="highlight">22:45 – 23:15</span> saatleri arasında gerçekleştiği tahmin edilmektedir.</p>
+    <h3>TOKSİKOLOJİ</h3>
+    <p>Kan örneklerinde <span class="highlight">lorazepam</span> (benzodiyazepin grubu sakinleştirici) tespit edilmiştir. Terapötik dozun 2,4 katı düzeyinde bulunması, kurbanın saldırıdan önce ilaçlandırıldığını düşündürmektedir. İlaç muhtemelen içecekle verilmiştir.</p>
+    <h3>VÜCUT ÜZERİNDE BULUNANLAR</h3>
+    <table>
+      <tr><th>Bölge</th><th>Bulgu</th></tr>
+      <tr><td>Sol el</td><td>Kırık kırmızı ojeli yapay tırnak parçası</td></tr>
+      <tr><td>Sol şakak</td><td>Ana darbe bölgesi — granit granül izi</td></tr>
+      <tr><td>Omuz</td><td>Boyunda sarılma izi (?)</td></tr>
+      <tr><td>Mide içeriği</td><td>Çay + lorazepam kalıntısı</td></tr>
+    </table>
+    <h3>EK GÖRÜŞ</h3>
+    <p>Darbenin açısı ve yönü göz önüne alındığında saldırganın <span class="highlight">kurbanın sol yanında, omuz hizasında durduğu</span> anlaşılmaktadır. Boy tahmini: 160–172 cm arası. Sağ el baskın kullanım izlenmiştir.</p>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('Otopsi: Lorazepam bulundu — kurban önceden ilaçlandı. Darbeci: 160-172 cm, kadın olabilir','otopsi')" id="ev_otopsi">
+    + Delili Panoya Ekle
+  </button>
+</div>`,
+
+lab_raporu: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">KRİMİNAL LABORATUVARI — TEMEL BULGULAR</div>
+    <div class="doc-title">LAB RAPORU (GENEL)</div>
+  </div>
+  <div class="doc-body">
+    <div class="lab-section">
+      <div class="lab-section-title">DNA ANALİZİ — ÇUVAL ELİ</div>
+      <div class="lab-row"><span class="lab-key">Örnek türü</span><span class="lab-val">Saç teli (foliküllü)</span></div>
+      <div class="lab-row"><span class="lab-key">Cinsiyet</span><span class="lab-val match">XX — Kadın</span></div>
+      <div class="lab-row"><span class="lab-key">Profil No</span><span class="lab-val">DNA-LB-7741</span></div>
+      <div class="lab-row"><span class="lab-key">Mevcut DB eşleşmesi</span><span class="lab-val warn">Bekleniyor (bkz. LAB-Şifreli)</span></div>
+    </div>
+    <div class="lab-section">
+      <div class="lab-section-title">PARMAK İZİ — MUTFAK KAPISI</div>
+      <div class="lab-row"><span class="lab-key">Kalite</span><span class="lab-val warn">Kısmen silinmiş (%47 uyum)</span></div>
+      <div class="lab-row"><span class="lab-key">AFIS sonucu</span><span class="lab-val warn">Kesin eşleşme yok</span></div>
+      <div class="lab-row"><span class="lab-key">Cinsiyet tahmini</span><span class="lab-val">Kadın (küçük iz alanı)</span></div>
+    </div>
+    <div class="lab-section">
+      <div class="lab-section-title">AYAK İZİ — TOPUKLU AYAKKABI</div>
+      <div class="lab-row"><span class="lab-key">Numara tahmini</span><span class="lab-val">37–38</span></div>
+      <div class="lab-row"><span class="lab-key">Marka izi</span><span class="lab-val">Christian Louboutin tarzı</span></div>
+      <div class="lab-row"><span class="lab-key">Kan izi mesafesi</span><span class="lab-val match">Mutfaktan çıkış yönünde 4 adım</span></div>
+    </div>
+    <div class="lab-section">
+      <div class="lab-section-title">PARFÜM ANALİZİ</div>
+      <div class="lab-row"><span class="lab-key">Tespit edilen koku</span><span class="lab-val">Ambroxan + Bergamot (yoğun)</span></div>
+      <div class="lab-row"><span class="lab-key">Piyasa karşılaştırması</span><span class="lab-val warn">Molecule 02 veya benzeri</span></div>
+    </div>
+    <p style="font-size:0.68rem;color:var(--text-secondary);margin-top:12px;">
+      ⚠ DNA profil eşleştirmesi şifreli lab raporunda tamamlanmıştır. Erişim kodu diğer belgelerden çıkarılabilir.
+    </p>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('Lab: DNA kadın, ayak izi 37-38 (Louboutin tarzı), parfüm Molecule 02','lab_raporu')" id="ev_lab">
+    + Delili Panoya Ekle
+  </button>
+</div>`,
+
+lab_encrypted: () => renderPassword('lab_encrypted', 'lab_encrypted_content',
+  'İpucu: DNA veritabanı erişim kodu Tarkan\'ın sorgu dosyasında geçiyor.'),
+
+lab_encrypted_content: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">KRİMİNAL LABORATUVARI — GİZLİ / SINIFLANDIRILMIŞ</div>
+    <div class="doc-title">DNA EŞLEŞTİRME SONUÇLARI</div>
+  </div>
+  <div class="doc-body">
+    <div class="lab-section">
+      <div class="lab-section-title">DNA PROFİL KARŞILAŞTIRMASI — DNA-LB-7741</div>
+      <div class="lab-row"><span class="lab-key">Şüpheli 1: Leyla Karahan</span><span class="lab-val match">✔ TAM EŞLEŞME (%99.97)</span></div>
+      <div class="lab-row"><span class="lab-key">Şüpheli 2: Murat Yılmaz</span><span class="lab-val nomatch">✗ EŞLEŞME YOK</span></div>
+      <div class="lab-row"><span class="lab-key">Şüpheli 3: Sinem Doğan</span><span class="lab-val nomatch">✗ EŞLEŞME YOK</span></div>
+      <div class="lab-row"><span class="lab-key">Şüpheli 4: Tarkan Arslan</span><span class="lab-val nomatch">✗ EŞLEŞME YOK (erkek profili zaten dışlanmış)</span></div>
+    </div>
+    <div class="lab-section">
+      <div class="lab-section-title">ÇUVAL ELİ KAN İZİ</div>
+      <div class="lab-row"><span class="lab-key">Kurbanla uyum</span><span class="lab-val match">%100 — Kemal Yıldız</span></div>
+      <div class="lab-row"><span class="lab-key">İkinci insan katkısı</span><span class="lab-val warn">Küçük miktarda — Leyla Karahan</span></div>
+    </div>
+    <div class="lab-section">
+      <div class="lab-section-title">BARINAK ÇAY BARDAĞI — AĞIZ İZİ DNA</div>
+      <div class="lab-row"><span class="lab-key">Eşleşme</span><span class="lab-val match">✔ Leyla Karahan — %99.81</span></div>
+    </div>
+    <p style="margin-top:12px;color:var(--accent-secondary);font-size:0.72rem;">
+      ⚠ BU BELGE SINIFLANDIRILMIŞTIR. LEYLA KARAHAN CİNAYET ALETİNİ TUTTU VE ÇAY İÇTİ.
+    </p>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('DNA EŞLEŞME: Leyla Karahan — havan eli + çay bardağı. KESİN DELİL!','lab_encrypted_content',true)" id="ev_dna">
+    + KRİTİK DELİLİ PANOYA EKLE
+  </button>
+</div>`,
+
+timeline: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">ZAMAN ÇİZELGESİ — 18 OCAK 2024</div>
+    <div class="doc-title">OLAY AKIŞ ANALİZİ</div>
+  </div>
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-time">20:30</div>
+      <div class="tl-text">Kemal Yıldız üniversiteden ayrılır. Araştırma notlarını ofiste bırakır.</div>
+      <div class="tl-who">Kaynak: Bina girişi kamerası</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">21:15</div>
+      <div class="tl-text">Leyla Karahan dışarıdan döner. Asansör kamerasında kırmızı topuklu ayakkabılar görülür.</div>
+      <div class="tl-who">Kaynak: Asansör kamerası</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">22:00</div>
+      <div class="tl-text">Sinem Doğan arkadaşıyla telefon görüşmesi yapar (kanıtlanmış).</div>
+      <div class="tl-who">Kaynak: GSM kaydı</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">22:10</div>
+      <div class="tl-text">Leyla Karahan, Kemal Yıldız'ın katını ziyaret eder. Giriş holü kamerasında görülür.</div>
+      <div class="tl-who">Kaynak: Giriş holü kamerası</div>
+    </div>
+    <div class="tl-item critical">
+      <div class="tl-time">22:28 – 22:45</div>
+      <div class="tl-text">Leyla, Kemal'e çay sunar. Lorazepam çaya eklenir. Kemal uyuşmaya başlar.</div>
+      <div class="tl-who">Kaynak: Toksikoloji + Çay bardağı DNA</div>
+    </div>
+    <div class="tl-item critical">
+      <div class="tl-time">22:48 – 23:05</div>
+      <div class="tl-text">Cinayet gerçekleşir. Kemal granit havan eliyle vurulur. Leyla mutfaktan kaçarken kan bastırır.</div>
+      <div class="tl-who">Kaynak: Otopsi + Kan ayak izi</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">23:10</div>
+      <div class="tl-text">Leyla'nın arka çıkıştan ayrıldığı kamerada görülür — farklı kıyafetle.</div>
+      <div class="tl-who">Kaynak: Arka çıkış kamerası</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">23:47</div>
+      <div class="tl-text">Komşu Fahriye Hanım çığlık duyduğunu bildirir. İlk ekipler sevk edilir.</div>
+      <div class="tl-who">Kaynak: 112 çağrı kaydı</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-time">00:03</div>
+      <div class="tl-text">Ekipler olay yerine ulaşır. Kemal Yıldız ölü bulunur.</div>
+      <div class="tl-who">Kaynak: Polis tutanağı</div>
+    </div>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('Zaman çizelgesi: 22:10 Leyla ziyareti, 22:45-23:05 cinayet, 23:10 arka çıkıştan kaçış','timeline')" id="ev_timeline">
+    + Delili Panoya Ekle
+  </button>
+</div>`,
+
+leyla: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">ŞÜPHELİ PROFİLİ — GİZLİ</div>
+    <div class="doc-title">LEYLA KARAHAN</div>
+    <div class="doc-meta">
+      <span>Doğum: <strong>1991</strong></span>
+      <span>Daire: <strong>9/A</strong></span>
+      <span>Risk: <strong style="color:var(--accent-secondary)">YÜKSEK</strong></span>
+    </div>
+  </div>
+  <div class="suspect-grid">
+    <div class="suspect-photo">
+      <div class="photo-placeholder">👩</div>
+      <div class="photo-overlay"></div>
+      <div class="photo-tag">LEYLA KARAHAN // ID:7741</div>
+    </div>
+    <div class="suspect-stats">
+      <div class="stat-item"><div class="stat-label">MESLEK</div><div class="stat-value">Araştırmacı (işsiz)</div></div>
+      <div class="stat-item"><div class="stat-label">SUÇLAMA</div><div class="stat-value danger">Şüpheli Konumda</div></div>
+      <div class="stat-item"><div class="stat-label">BOY</div><div class="stat-value">165 cm</div></div>
+      <div class="stat-item"><div class="stat-label">DOMINANT EL</div><div class="stat-value warn">Sağ</div></div>
+      <div class="stat-item"><div class="stat-label">ALİBİ</div><div class="stat-value danger">YOK — Doğrulanamaz</div></div>
+      <div class="stat-item"><div class="stat-label">AYAKKABI NO</div><div class="stat-value warn">37</div></div>
+    </div>
+  </div>
+  <div class="doc-body">
+    <h3>ARKA PLAN</h3>
+    <p>Leyla Karahan, 2019 yılında Kemal Yıldız'ın öğrencisiydi. Akademik usulsüzlük iddiasıyla doktora programından ihraç edilmiş ve Yıldız'ın bu ihraçta belirleyici rol oynadığı bilinmektedir. O tarihten bu yana Kemal'in bulunduğu binada kiracı olarak kalmakta — komşuluk alenen rahatsız edici bulunmaktadır.</p>
+    <h3>PSİKOLOJİK PROFİL</h3>
+    <p>Aşırı kontrol ihtiyacı. Narsisistik kişilik özellikleri. Öfke kontrolü sorunları (kayıtlı). Eski öğretmenini sorumluluk için hedef seçmiş olabilir. Planlama kapasitesi yüksek.</p>
+    <h3>HAREKET GEÇMİŞİ (18 Ocak)</h3>
+    <table>
+      <tr><th>Saat</th><th>Konum</th><th>Kaynak</th></tr>
+      <tr><td>19:00</td><td>Eczane (Kadıköy)</td><td>Eczane kaydı</td></tr>
+      <tr><td>21:15</td><td>Apartman girişi</td><td>Asansör kamerası</td></tr>
+      <tr><td>22:10</td><td>9. kat koridoru</td><td>Giriş holü kamerası</td></tr>
+      <tr><td>23:10</td><td>Arka çıkış</td><td>Kamera (farklı kıyafet)</td></tr>
+      <tr><td>23:47</td><td>Kendi dairesi</td><td>Kendi beyanı (doğrulanamaz)</td></tr>
+    </table>
+    <h3>KRİTİK NOT</h3>
+    <p><span class="highlight">19:00'da eczaneden lorazepam reçetesi aldığı belirlenmiştir</span> — ancak Leyla, "migren için" olduğunu öne sürmektedir. Şifreli özel dosyasında ek bilgi yer almaktadır.</p>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('Leyla: Eczaneden lorazepam aldı, 165cm sağ el baskın, ayak izi 37 — eşleşiyor!','leyla')" id="ev_leyla">
+    + Delili Panoya Ekle
+  </button>
+</div>`,
+
+murat: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">ŞÜPHELİ PROFİLİ</div>
+    <div class="doc-title">MURAT YILMAZ</div>
+    <div class="doc-meta">
+      <span>Doğum: <strong>1985</strong></span>
+      <span>Daire: <strong>7/G (Görevli Dairesi)</strong></span>
+      <span>Risk: <strong style="color:var(--accent-warn)">ORTA</strong></span>
+    </div>
+  </div>
+  <div class="suspect-grid">
+    <div class="suspect-photo">
+      <div class="photo-placeholder">👨</div>
+      <div class="photo-overlay"></div>
+      <div class="photo-tag">MURAT YILMAZ // ID:7742</div>
+    </div>
+    <div class="suspect-stats">
+      <div class="stat-item"><div class="stat-label">MESLEK</div><div class="stat-value">Apartman Görevlisi</div></div>
+      <div class="stat-item"><div class="stat-label">BOY</div><div class="stat-value">178 cm</div></div>
+      <div class="stat-item"><div class="stat-label">ALİBİ</div><div class="stat-value warn">ZAYIF</div></div>
+      <div class="stat-item"><div class="stat-label">DOMINANT EL</div><div class="stat-value">Sol</div></div>
+    </div>
+  </div>
+  <div class="doc-body">
+    <h3>ARKA PLAN</h3>
+    <p>Beş yıldır binada görev yapmaktadır. Kemal Yıldız ile kira gecikmeleri konusunda geçmişte tartışma yaşamıştır. Yönetim tarafından uyarılmış kaydı mevcuttur. DNA profili havan eliyle eşleşmemektedir.</p>
+    <h3>ALİBİ DEĞERLENDİRMESİ</h3>
+    <p>"22:00 ile 00:00 arasında bodrumdaki kazan dairesini kontrol ediyordum" demektedir. Kazan dairesinde kamera yoktur. Ancak otopark kamerası 22:45'te onu farklı katta göstermektedir — <span class="highlight">9. kat butonu aktif</span>.</p>
+    <h3>DNA DURUMU</h3>
+    <p>DNA profili havan eli saç teliyle <span class="highlight" style="color:var(--accent-green)">eşleşmemektedir</span>. Yüksek olasılıkla suç ortaklığı da söz konusu değildir. Ancak motivasyonu zayıf değildir.</p>
+  </div>
+</div>`,
+
+sinem: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">ŞÜPHELİ PROFİLİ</div>
+    <div class="doc-title">SİNEM DOĞAN</div>
+    <div class="doc-meta">
+      <span>Doğum: <strong>1978</strong></span>
+      <span>Daire: <strong>11/B</strong></span>
+      <span>Risk: <strong style="color:var(--accent-green)">DÜŞÜK</strong></span>
+    </div>
+  </div>
+  <div class="suspect-grid">
+    <div class="suspect-photo">
+      <div class="photo-placeholder">👩‍💼</div>
+      <div class="photo-overlay"></div>
+      <div class="photo-tag">SİNEM DOĞAN // ID:7743</div>
+    </div>
+    <div class="suspect-stats">
+      <div class="stat-item"><div class="stat-label">MESLEK</div><div class="stat-value">Avukat</div></div>
+      <div class="stat-item"><div class="stat-label">BOY</div><div class="stat-value">170 cm</div></div>
+      <div class="stat-item"><div class="stat-label">ALİBİ</div><div class="stat-value ok">GÜÇLÜ</div></div>
+      <div class="stat-item"><div class="stat-label">AYAKKABI NO</div><div class="stat-value ok">39 (uymuyor)</div></div>
+    </div>
+  </div>
+  <div class="doc-body">
+    <h3>ARKA PLAN</h3>
+    <p>Üst katta oturur, Kemal ile olumlu ilişkisi vardır. Kemal'in birkaç yasal işlemi için danışmanlık yapmıştır.</p>
+    <h3>ALİBİ</h3>
+    <p>22:00–23:00 arasında avukatlık bürosu ortağıyla 58 dakikalık telefon görüşmesi tespit edilmiştir. GSM kaydı, oturduğu konuma yakın baz istasyonunu göstermektedir. <span class="highlight" style="color:var(--accent-green)">Alibi güçlüdür.</span></p>
+    <h3>DNA DURUMU</h3>
+    <p>Eşleşme yoktur. Dışlanmıştır.</p>
+  </div>
+</div>`,
+
+tarkan: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">ŞÜPHELİ PROFİLİ</div>
+    <div class="doc-title">TARKAN ARSLAN</div>
+    <div class="doc-meta">
+      <span>Doğum: <strong>1990</strong></span>
+      <span>Görev Yeri: <strong>B1 – Güvenlik Kabini</strong></span>
+      <span>Risk: <strong style="color:var(--accent-warn)">ORTA</strong></span>
+    </div>
+  </div>
+  <div class="suspect-grid">
+    <div class="suspect-photo">
+      <div class="photo-placeholder">👮</div>
+      <div class="photo-overlay"></div>
+      <div class="photo-tag">TARKAN ARSLAN // ID:7744</div>
+    </div>
+    <div class="suspect-stats">
+      <div class="stat-item"><div class="stat-label">MESLEK</div><div class="stat-value">Güvenlik Görevlisi</div></div>
+      <div class="stat-item"><div class="stat-label">BOY</div><td class="stat-value">182 cm</div></div>
+      <div class="stat-item"><div class="stat-label">ALİBİ</div><div class="stat-value warn">KISMI</div></div>
+      <div class="stat-item"><div class="stat-label">LAB KOD</div><div class="stat-value warn">DNA4471</div></div>
+    </div>
+  </div>
+  <div class="doc-body">
+    <h3>ARKA PLAN</h3>
+    <p>Kemal Yıldız'ın geçmişte kayıp bir araştırma bursunu kendine aktardığı iddiasıyla suçlandığı bilinmektedir. Tarkan bu davada tanık konumundaydı. Kemal davayı kazanmıştır.</p>
+    <h3>SORGU KAYDI — EK BİLGİ</h3>
+    <p>Sorgu sırasında lab raporlarına erişim kodu <span class="highlight">DNA4471</span> olarak tanımladığı not edilmiştir. Bu kodu nasıl bildiği açıklanamamıştır.</p>
+    <h3>DNA</h3>
+    <p>Erkek profili, havan eli saç teliyle eşleşmemektedir. Fiziksel kanıt zayıftır.</p>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('Tarkan sorgusu: Lab kodu DNA4471 ifşa etti — nasıl biliyor? Şifreli Lab dosyasını aç!','tarkan')" id="ev_tarkan">
+    + Delili Panoya Ekle
+  </button>
+</div>`,
+
+cam_giris: () => renderCamera('GİRİŞ HOLÜ — KAT ZEMİN', 'CAM-01', '22:10:34',
+  '🏢', [
+  {time:'22:08:12', desc:'Murat Yılmaz lobiye giriyor. Elinde temizlik malzemesi var.', critical:false},
+  {time:'22:10:34', desc:'LEYLA KARAHAN giriyor. Kırmızı topuklu ayakkabı. Elinde poşet var.', critical:true},
+  {time:'22:23:17', desc:'Sinem Doğan merdivenden iniyor, postayı alıyor.', critical:false},
+  {time:'22:51:08', desc:'Leyla Karahan asansörden çıkıyor — ellerini tutuyor, farklı poz.', critical:true},
+], 'cam_giris'),
+
+cam_asansor: () => renderCamera('ASANSÖR İÇİ — TÜM KATLAR', 'CAM-02', '22:28:00',
+  '🚪', [
+  {time:'22:28:00', desc:'Leyla Karahan asansöre giriyor. Küçük çanta var. 9. kata basıyor.', critical:true},
+  {time:'22:29:11', desc:'Asansör 9. katta duruyor. Leyla çıkıyor — zil çalıyor gibi duruyor.', critical:false},
+  {time:'23:07:45', desc:'Leyla Karahan TEKRAR asansöre giriyor. Kıyafet değişmiş, saçlar düzensiz.', critical:true},
+], 'cam_asansor'),
+
+cam_otopark: () => renderCamera('OTOPARK — B2 KAT', 'CAM-03', '22:45:00',
+  '🚗', [
+  {time:'22:44:58', desc:'Murat Yılmaz otopark merdiveni girişinde görünüyor. Elinde anahtar var.', critical:false},
+  {time:'22:45:33', desc:'Asansör butonu ışığı — 9. kat aktif (otopark panelinden izleniyor).', critical:true},
+  {time:'23:02:10', desc:'Bir araç arka çıkışa yakın park ediyor, plaka görülemiyor.', critical:false},
+], 'cam_otopark'),
+
+cam_mutfak: () => renderCamera('MUTFAK KORİDORU — KAT 9', 'CAM-04', '23:00:00',
+  '🍽', [
+  {time:'22:59:52', desc:'Koridor ışığı yanıyor. Gölge hareket var — tespit edilemiyor.', critical:false},
+  {time:'23:04:19', desc:'KAMERA AÇISI ENGELLENDI. Birisi mercek önüne geçmiş gibi görünüyor.', critical:true},
+  {time:'23:09:00', desc:'Kamera yeniden aktif. Koridor boş.', critical:false},
+], 'cam_mutfak'),
+
+cam_cikis: () => renderCamera('ARKA ÇIKIŞ — BAHÇE KAPISI', 'CAM-05', '23:15:00',
+  '🚪', [
+  {time:'23:10:17', desc:'Bayan figür arka kapıdan çıkıyor. Kıyafet: koyu palto. Yüz kameraya dönük değil.', critical:true},
+  {time:'23:11:02', desc:'Figür sola doğru uzaklaşıyor. Yürüyüş biraz topallıyor — sol topuk.', critical:true},
+  {time:'23:15:44', desc:'Komşu köpek, kapı yakınında çılgınca havlamaya başlıyor.', critical:false},
+], 'cam_cikis'),
+
+phone_leyla: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">GSM KAYITLARI — LEYLA KARAHAN</div>
+    <div class="doc-title">TELEFON ARAMA LİSTESİ</div>
+  </div>
+  <div class="doc-body">
+    <p style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:10px;">Hat: 0532 *** ** 41 | Operatör: Turkcell | Tarih: 18 Ocak 2024</p>
+    <div class="phone-log">
+      <div class="phone-entry"><span class="pe-time">14:22</span><span class="pe-from">L. Karahan</span><span class="pe-to">Bilinmeyen</span><span class="pe-dur">4:12</span><span class="pe-flag">⚠</span></div>
+      <div class="phone-entry"><span class="pe-time">17:45</span><span class="pe-from">Eczane</span><span class="pe-to">L. Karahan</span><span class="pe-dur">1:00</span><span class="pe-flag"></span></div>
+      <div class="phone-entry"><span class="pe-time">19:33</span><span class="pe-from">L. Karahan</span><span class="pe-to">Bilinmeyen</span><span class="pe-dur">8:47</span><span class="pe-flag">⚠⚠</span></div>
+      <div class="phone-entry"><span class="pe-time">22:07</span><span class="pe-from">L. Karahan</span><span class="pe-to">K. Yıldız</span><span class="pe-dur">0:42</span><span class="pe-flag">⚠</span></div>
+      <div class="phone-entry"><span class="pe-time">23:22</span><span class="pe-from">L. Karahan</span><span class="pe-to">Bilinmeyen</span><span class="pe-dur">2:05</span><span class="pe-flag">⚠</span></div>
+    </div>
+    <p style="margin-top:12px;font-size:0.68rem;color:var(--accent-warn);">
+      ⚠ Saat 22:07 — cinayetten 3 dakika önce kurbanla konuşmuş. Ses kaydı ele geçirilmiştir.
+    </p>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('Leyla telefon: 22:07\'de kurbanı aradı (3 dk önce). Bilinmeyen numara kayıtları mevcut.','phone_leyla')" id="ev_phone_leyla">
+    + Delili Panoya Ekle
+  </button>
+</div>`,
+
+phone_murat: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">GSM KAYITLARI — MURAT YILMAZ</div>
+    <div class="doc-title">TELEFON ARAMA LİSTESİ</div>
+  </div>
+  <div class="doc-body">
+    <p style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:10px;">Hat: 0505 *** ** 88 | Tarih: 18 Ocak 2024</p>
+    <div class="phone-log">
+      <div class="phone-entry"><span class="pe-time">20:10</span><span class="pe-from">M. Yılmaz</span><span class="pe-to">Ailesi</span><span class="pe-dur">11:20</span><span class="pe-flag"></span></div>
+      <div class="phone-entry"><span class="pe-time">21:55</span><span class="pe-from">M. Yılmaz</span><span class="pe-to">A. Yönetimi</span><span class="pe-dur">3:01</span><span class="pe-flag"></span></div>
+      <div class="phone-entry"><span class="pe-time">23:48</span><span class="pe-from">Polis</span><span class="pe-to">M. Yılmaz</span><span class="pe-dur">2:30</span><span class="pe-flag"></span></div>
+    </div>
+    <p style="margin-top:12px;font-size:0.68rem;color:var(--accent-green);">Telefon kaydı alibiyle çelişmiyor.</p>
+  </div>
+</div>`,
+
+phone_sinem: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">GSM KAYITLARI — SİNEM DOĞAN</div>
+    <div class="doc-title">TELEFON ARAMA LİSTESİ</div>
+  </div>
+  <div class="doc-body">
+    <p style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:10px;">Hat: 0542 *** ** 03 | Tarih: 18 Ocak 2024</p>
+    <div class="phone-log">
+      <div class="phone-entry"><span class="pe-time">22:00</span><span class="pe-from">S. Doğan</span><span class="pe-to">M. Ceyhan (Büro)</span><span class="pe-dur">58:13</span><span class="pe-flag"></span></div>
+      <div class="phone-entry"><span class="pe-time">23:15</span><span class="pe-from">S. Doğan</span><span class="pe-to">Komşu</span><span class="pe-dur">0:55</span><span class="pe-flag"></span></div>
+    </div>
+    <p style="margin-top:12px;font-size:0.68rem;color:var(--accent-green);">22:00-23:00 kesintisiz görüşme — güçlü alibi doğrulandı.</p>
+  </div>
+</div>`,
+
+photo_olay: () => renderPhoto('OLAY YERİ FOTOĞRAFI #1', '🔪', [
+  {num:'A', text:'Granit havan eli — kan izi görülüyor. Parmak izi silindikten sonra bırakılmış.'},
+  {num:'B', text:'Tezgah üzerinde iki bardak — biri kullanılmış. DNA alındı.'},
+  {num:'C', text:'Kan topuklu ayak izi — çıkış yönünde, topuk desen analizi: Louboutin tarzı.'},
+], 'photo_olay'),
+
+photo_parmak: () => renderPhoto('PARMAK İZİ KARŞILAŞTIRMASI', '🖐', [
+  {num:'1', text:'Sol örnek: Kapı sürgüsü — %47 eşleşme (silinmiş). Küçük iz alanı, kadın profili.'},
+  {num:'2', text:'Sağ örnek: AFIS veritabanı taraması devam ediyor.'},
+], 'photo_parmak'),
+
+photo_kesik: () => renderPhoto('DARBE ANALİZİ — KESİK AÇISI', '💥', [
+  {num:'1', text:'Darbe arkadan sola doğru. Saldırgan kurbanın solunda duruyordu.'},
+  {num:'2', text:'Açı analizi: 160-172 cm arası. Kuvvet vektörü sağ el baskınlığına işaret ediyor.'},
+  {num:'3', text:'Kurbanın sol elinde kırık yapay tırnak (kırmızı oje) — mücadele sırasında kırılmış.'},
+], 'photo_kesik'),
+
+photo_ayiz: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">AYAK İZİ ANALİZİ — ÖZEL RAPOR</div>
+    <div class="doc-title">TOPUKLU AYAKKABI İZİ</div>
+  </div>
+  <div class="doc-body">
+    <div class="photo-frame" style="min-height:200px;font-size:3rem;" onclick="this.classList.toggle('zoomed')">
+      👠
+      <div class="photo-overlay-scan"></div>
+    </div>
+    <div class="photo-annotations">
+      <div class="annotation"><span class="ann-num">[1]</span>Topuk çapı: 1.2 cm — stiletto tipi.</div>
+      <div class="annotation"><span class="ann-num">[2]</span>Numara: 37. Leyla Karahan beyan: "37 numara giyerim."</div>
+      <div class="annotation"><span class="ann-num">[3]</span>Taban markası: Christian Louboutin ya da kopyası.</div>
+      <div class="annotation"><span class="ann-num">[4]</span>Yürüyüş düzensiz — sol topukta küçük yaralanma olabilir (kamera ile örtüşüyor).</div>
+    </div>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('Ayak izi: 37 numara Louboutin stiletto — Leyla beyanıyla eşleşiyor!','photo_ayiz')" id="ev_ayiz">
+    + KRİTİK DELİLİ PANOYA EKLE
+  </button>
+</div>`,
+
+leyla_private: () => renderPassword('leyla_private', 'leyla_private_content',
+  'İpucu: Leyla\'nın çocukluğunu geçirdiği mahalle — Kirazlıbahçe.'),
+
+leyla_private_content: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">LEYLA KARAHAN — ÖZEL DOSYA [SINIFLANDIRILMIŞ]</div>
+    <div class="doc-title">GİZLİ BELGELER</div>
+  </div>
+  <div class="doc-body">
+    <h3>ECZANE KAYDI — 18 OCAK 2024</h3>
+    <p><span class="highlight">Saat 19:00 — Lorazepam 2mg, 20 tablet.</span> Reçete sahibi: Dr. Altan Şimşek. Reçete tarih: 15 Ocak 2024. Bu dozaj miktarı birden fazla kişiyi uyutmaya yeterlidir.</p>
+    <h3>ÖZEL NOT DEFTERI (Dijital)</h3>
+    <p style="font-style:italic;color:var(--text-secondary);border-left:2px solid var(--accent-secondary);padding-left:12px;margin:10px 0;line-height:1.8;">
+    "...Yıllarca bu adamın yüzünden yaşamım mahvoldu. Kariyerim, güvenim, geleceğim. Artık yeter. Bir plan var kafamda. Lorazepam çayına kolayca karışıyor. Test ettim. 2 saat içinde uyutuyor. Eğer ihtiyarın lorazepam alerjisi olmasa...<br><br>
+    ...hazırım."
+    </p>
+    <h3>FOTOĞRAF ALBÜMÜ (Silinen Dosyalar)</h3>
+    <p>Leyla'nın telefonundan silinen fotoğraflar yeniden yapılandırılmıştır: <span class="highlight">Mutfak düzeni araştırmaları, havan eli fotoğrafları, kat planı çizimleri</span>.</p>
+    <p style="color:var(--accent-secondary);margin-top:12px;">⚠ BU DOSYA KESİN DELİL NİTELİĞİNDEDİR.</p>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('LEYLA ÖZEL DOSYASI: Premeditated plan — lorazepam testi, mutfak araştırması. PLANLI CİNAYET!','leyla_private_content', true)" id="ev_leyla_priv">
+    + KRİTİK DELİLİ PANOYA EKLE
+  </button>
+</div>`,
+
+ali_private: () => renderPassword('ali_private', 'ali_private_content',
+  'İpucu: Tarkan\'ın fanı olduğu futbol takımı — Arsenal, şüpheli doğrulaması kodu 47.'),
+
+ali_private_content: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">ALİ KARAHAN — KARDEŞ DOSYASI [SINIFLANDIRILMIŞ]</div>
+    <div class="doc-title">LEYLA'NIN KARDEŞİ — EK ARAŞTIRMA</div>
+  </div>
+  <div class="doc-body">
+    <h3>ALİ KARAHAN KİMDİR?</h3>
+    <p>Leyla Karahan'ın ağabeyi. Kimyager. Kemal Yıldız'ın eski asistanı (2015-2018). Aksi ispat edilinceye kadar cinayetle doğrudan ilişkisi bulunmamaktadır.</p>
+    <h3>KRİTİK BİLGİ</h3>
+    <p>Ali Karahan, lorazepam sentezi konusunda uzman kimyagerdir. Leyla'nın telefon kaydındaki <span class="highlight">bilinmeyen numaralardan biri Ali'ye ait</span>.</p>
+    <p>19:33'teki 8 dakika 47 saniyelik konuşma — büyük ihtimalle son talimatlar.</p>
+    <h3>SONUÇ</h3>
+    <p>Leyla, ağabeyi Ali'den teknik destek almış olabilir. Ancak doğrudan katil Leyla Karahan'dır.</p>
+  </div>
+</div>`,
+
+zoraki_itiraf: () => `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">GİZLİ BELGE — EL YAZISI İTİRAF</div>
+    <div class="doc-title">LEYLA KARAHAN'IN EL YAZISINDAN PARÇALAR</div>
+  </div>
+  <div class="doc-body">
+    <p style="font-size:0.68rem;color:var(--accent-warn);margin-bottom:16px;">
+      ⚠ Bu belge çöp kovasındaki yırtık zarfın yeniden birleştirilmesiyle elde edilmiştir.
+    </p>
+    <p style="font-style:italic; font-family:'Rajdhani',sans-serif; font-size:1rem; line-height:2; color:var(--text-primary); padding:16px; background:var(--bg-card); border:1px solid var(--border-accent); border-radius:3px;">
+      "...eğer bu mektubu okuyorsan, artık her şey bitti demektir. Yıllar önce haksızlığa uğradım. Hocam, öğretmenim dediğim adam benim araştırmamı çaldı ve beni mahkûm etti. Bir plan yaptım. Titiz bir plan. Kimse anlayamaz...<br><br>
+      ...pişman değilim."
+    </p>
+    <p style="color:var(--accent-secondary);font-size:0.72rem;margin-top:12px;">EL YAZISI ANALİZİ: Leyla Karahan ile %94 eşleşme.</p>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('EL YAZISI İTİRAF: Leyla planladığını ve pişman olmadığını yazmış — premeditated murder!','zoraki_itiraf', true)" id="ev_itiraf">
+    + KRİTİK DELİLİ PANOYA EKLE
+  </button>
+</div>`,
+
+audio_sorgu_leyla: () => renderAudio(
+  'SORGU SES KAYDI — LEYLA KARAHAN',
+  'Sorgu tarihi: 19 Ocak 2024 | Süresi: 47:23 | Sorgulayan: Kom. Ateş',
+  `[00:03:14] Ateş: "O gece Kemal Bey'i ziyaret ettiniz mi?"
+Leyla: "Hayır. Evdeydim bütün gece."
+[00:04:01] Ateş: "Peki asansör kamerası sizi 22:10'da 9. kata giden görüntülüyor."
+Leyla: [3.2 saniyelik duraklama] "Yanlış hatırlıyorsunuz."
+[00:07:22] Ateş: "Kırmızı topuklu ayakkabılarınız nerede?"
+Leyla: "Bilmiyorum, kayboldu galiba."
+[00:12:45] Ateş: "Sol topuğunuzda yara izi var. Nasıl oldu?"
+Leyla: "Düştüm. Dün sabah."
+[00:18:33] Ateş: "Eczaneden lorazepam aldınız o gün. Neden?"
+Leyla: "Migren. Doktor yazdı." [Sesinde titreme]`,
+  'audio_sorgu_leyla'
+),
+
+audio_sorgu_murat: () => renderAudio(
+  'SORGU SES KAYDI — MURAT YILMAZ',
+  'Sorgu tarihi: 19 Ocak 2024 | Süresi: 28:11',
+  `[00:02:10] Ateş: "O gece kazan dairesindeydiniz diyorsunuz. Ne zamana kadar?"
+Murat: "Gece yarısına kadar. Tek başımaydım."
+[00:05:44] Ateş: "Asansörden 9. kat butonuna bastınız. Neden?"
+Murat: "9. kat... hayır basmadım ben." [Gergin]
+[00:11:00] Ateş: "DNA'nız havan elinde yok."
+Murat: "Tabii ki yok, ben dokunmadım!"`,
+  'audio_sorgu_murat'
+),
+
+audio_sorgu_tarkan: () => renderAudio(
+  'SORGU SES KAYDI — TARKAN ARSLAN',
+  'Sorgu tarihi: 19 Ocak 2024 | Süresi: 22:05',
+  `[00:01:15] Ateş: "Güvenlik görevlisi olarak o gece kameralara baktınız mı?"
+Tarkan: "Evet, rutin kontrol yaptım."
+[00:09:30] Ateş: "Lab raporu erişim kodu DNA4471'i nereden biliyorsunuz?"
+Tarkan: [Sessizlik 4.1 sn] "Duydum bir yerden. Emin değilim."
+[00:10:12] Ateş: "Duyduğunuz yer Leyla Karahan mı?"
+Tarkan: [Derin nefes] "O... konuşmak istemiyorum."`,
+  'audio_sorgu_tarkan'
+),
+
+audio_telefon: () => renderAudio(
+  'ELE GEÇİRİLEN TELEFON GÖRÜŞME KAYDI',
+  'Tarih: 18 Ocak 2024 23:22 | Hat: Leyla Karahan → Bilinmeyen',
+  `[Ses bozuk — kısmi transkript]
+Leyla: "...tamamlandı. Her şey planlandığı gibi gitti."
+Bilinmeyen: "Emin misin? Hiçbir iz bırakmadın?"
+Leyla: "Eldiven taktım. Havan elini sildim. Ayakkabıları attım."
+Bilinmeyen: "Peki o..."
+[Sinyal kesilmesi]
+Leyla: "...pişman değilim. Hak etti."`,
+  'audio_telefon'
+),
+};
+
+// ============================================================
+// HELPERS
+// ============================================================
+function renderPassword(fileId, unlockedId, hint) {
+  if (GAME.solvedPasswords.has(fileId)) {
+    return CONTENT[unlockedId]();
+  }
+  return `
+<div class="pw-screen">
+  <div class="pw-icon">🔒</div>
+  <div class="pw-title">DOSYA ŞİFRELİ</div>
+  <div class="pw-sub">Bu dosyaya erişmek için şifre gerekiyor.<br>Şifreyi delillerden çöz.</div>
+  <div class="pw-input-wrap">
+    <input class="pw-input" id="pwInput_${fileId}" type="text" placeholder="ŞİFRE" maxlength="20"
+      onkeydown="if(event.key==='Enter') checkPw('${fileId}','${unlockedId}')">
+    <button class="pw-btn" onclick="checkPw('${fileId}','${unlockedId}')">GİR</button>
+  </div>
+  <div class="pw-error" id="pwErr_${fileId}" style="display:none">⚠ Yanlış şifre</div>
+  <div class="pw-hint">${hint}</div>
+</div>`;
+}
+
+function renderCamera(name, id, ts, emoji, events, fileId) {
+  const evHtml = events.map(e => `
+    <div class="cam-event-item ${e.critical?'critical':''}">
+      <span class="cam-event-time">${e.time}</span>
+      <span class="cam-event-desc">${e.desc}</span>
+    </div>`).join('');
+
+  const critCount = events.filter(e=>e.critical).length;
+  return `
+<div class="cam-container">
+  <div class="cam-header">
+    <div class="cam-title">${name}</div>
+    <div class="cam-status">● KAYITTAN OYNATILIYOR</div>
+  </div>
+  <div class="cam-screen" onclick="this.querySelector('.cam-scene').style.transform=this.querySelector('.cam-scene').style.transform?'':'scale(1.8)'">
+    <div class="cam-scene">${emoji}</div>
+    <div class="cam-overlay"></div>
+    <div class="cam-info">${id}<br>${name}</div>
+    <div class="cam-ts">${ts} ●REC</div>
+    <div class="cam-corner tl"></div><div class="cam-corner tr"></div>
+    <div class="cam-corner bl"></div><div class="cam-corner br"></div>
+  </div>
+  <div class="cam-events">
+    <div class="cam-events-label">// KAYIT OLAYları (${events.length} kayıt, ${critCount} kritik)</div>
+    ${evHtml}
+  </div>
+  ${critCount > 0 ? `<button class="add-evidence-btn" onclick="addEvidence('Kamera ${id}: Kritik hareket tespit edildi — ${events.filter(e=>e.critical)[0].desc.substring(0,60)}...','${fileId}')" id="ev_${fileId}">+ Delili Panoya Ekle</button>` : ''}
+</div>`;
+}
+
+function renderPhoto(title, emoji, annotations, fileId) {
+  const annHtml = annotations.map(a =>
+    `<div class="annotation"><span class="ann-num">[${a.num}]</span>${a.text}</div>`
+  ).join('');
+  return `
+<div class="photo-viewer">
+  <div class="doc-header" style="border-bottom:1px solid var(--border-accent);padding-bottom:12px;margin-bottom:16px;">
+    <div class="doc-agency">ADLİ FOTOĞRAF ANALİZİ</div>
+    <div class="doc-title" style="font-size:1.2rem;">${title}</div>
+  </div>
+  <div class="photo-frame" onclick="this.classList.toggle('zoomed');this.style.transform=this.style.transform?'':'scale(1.4)'">
+    ${emoji}
+    <div class="photo-overlay-scan"></div>
+  </div>
+  <div class="photo-annotations" style="margin-top:12px;">${annHtml}</div>
+  <button class="add-evidence-btn" onclick="addEvidence('Fotoğraf: ${title.substring(0,50)}','${fileId}')" id="ev_${fileId}">
+    + Delili Panoya Ekle
+  </button>
+</div>`;
+}
+
+function renderAudio(title, meta, transcript, fileId) {
+  const bars = Array.from({length:40}, (_,i) =>
+    `<div class="ap-bar" style="height:${8+Math.sin(i*0.8)*8+Math.random()*8}px"></div>`
+  ).join('');
+  return `
+<div class="doc-container">
+  <div class="doc-header">
+    <div class="doc-agency">SES KAYDI ANALİZİ</div>
+    <div class="doc-title" style="font-size:1.2rem;">${title}</div>
+    <div class="doc-meta"><span>${meta}</span></div>
+  </div>
+  <div class="audio-player">
+    <div class="ap-title">// SES DOSYASI</div>
+    <div class="ap-controls">
+      <div class="ap-play" onclick="playAudio(this)">▶</div>
+      <div class="ap-waveform">${bars}</div>
+      <div class="ap-time">47:23</div>
+    </div>
+    <div class="ap-transcript">${transcript.split('\n').join('<br>')}</div>
+  </div>
+  <button class="add-evidence-btn" onclick="addEvidence('Ses Kaydı: ${title.substring(0,50)} — transkript analiz edildi','${fileId}')" id="ev_${fileId}">
+    + Delili Panoya Ekle
+  </button>
+</div>`;
+}
+
+// ============================================================
+// FILE TREE BUILDER
+// ============================================================
+function buildFileTree() {
+  const tree = document.getElementById('fileTree');
+  tree.innerHTML = '';
+
+  FILE_SYSTEM.forEach(folder => {
+    const div = document.createElement('div');
+    div.className = 'folder';
+
+    const visibleChildren = folder.children.filter(c => !c.hidden || GAME.unlockedFiles.has(c.id));
+
+    div.innerHTML = `
+      <div class="folder-label" onclick="toggleFolder(this)">
+        <span class="icon">▶</span>
+        <span>${folder.label}</span>
+        ${folder.badge ? `<span class="badge">${folder.badge}</span>` : ''}
+      </div>
+      <div class="folder-children">
+        ${visibleChildren.map(f => `
+          <div class="file-item ${f.locked && !GAME.solvedPasswords.has(f.id) ? 'locked':''}"
+            id="fi_${f.id}"
+            onclick="openFile('${f.id}')">
+            <span class="file-icon">${f.icon}</span>
+            <span>${f.label}</span>
+          </div>
+        `).join('')}
+      </div>`;
+    tree.appendChild(div);
+  });
+}
+
+function toggleFolder(el) {
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('visible');
+}
+
+// ============================================================
+// FILE OPENER
+// ============================================================
+function openFile(id) {
+  if (!GAME.gameStarted && id !== 'welcome') {
+    showToast('Önce soruşturmayı başlatmalısın.','warn');
+    return;
+  }
+
+  const actualId = GAME.solvedPasswords.has(id) ? id + '_content' : id;
+
+  if (!GAME.openTabs.includes(id)) {
+    GAME.openTabs.push(id);
+    const tabs = document.getElementById('viewerTabs');
+    const tab = document.createElement('div');
+    tab.className = 'vtab';
+    tab.dataset.id = id;
+    tab.textContent = getTabLabel(id);
+    tab.onclick = () => switchTab(id);
+    const closeBtn = document.createElement('span');
+    closeBtn.textContent = ' ×';
+    closeBtn.style.cssText = 'margin-left:6px;opacity:0.5;';
+    closeBtn.onclick = (e) => { e.stopPropagation(); closeTab(id); };
+    tab.appendChild(closeBtn);
+    tabs.appendChild(tab);
+  }
+  switchTab(id);
+  setActiveFile(id);
+}
+
+function getTabLabel(id) {
+  const labels = {
+    welcome:'Anasayfa', olay_raporu:'Olay Raporu', otopsi:'Otopsi', lab_raporu:'Lab',
+    lab_encrypted:'Şifreli Lab', timeline:'Zaman Çizelgesi',
+    leyla:'Leyla K.', murat:'Murat Y.', sinem:'Sinem D.', tarkan:'Tarkan A.',
+    cam_giris:'CAM-01', cam_asansor:'CAM-02', cam_otopark:'CAM-03',
+    cam_mutfak:'CAM-04', cam_cikis:'CAM-05',
+    phone_leyla:'GSM-Leyla', phone_murat:'GSM-Murat', phone_sinem:'GSM-Sinem',
+    photo_olay:'Foto-01', photo_parmak:'Foto-02', photo_kesik:'Foto-03', photo_ayiz:'Foto-04',
+    leyla_private:'Leyla-Özel', ali_private:'Ali-Özel', zoraki_itiraf:'İtiraf',
+    audio_sorgu_leyla:'Ses-Leyla', audio_sorgu_murat:'Ses-Murat',
+    audio_sorgu_tarkan:'Ses-Tarkan', audio_telefon:'Ses-Telefon',
+  };
+  return labels[id] || id;
+}
+
+function switchTab(id) {
+  GAME.activeTab = id;
+  document.querySelectorAll('.vtab').forEach(t => t.classList.toggle('active', t.dataset.id === id));
+  renderContent(id);
+}
+
+function closeTab(id) {
+  const idx = GAME.openTabs.indexOf(id);
+  if (idx !== -1) GAME.openTabs.splice(idx, 1);
+  document.querySelector(`.vtab[data-id="${id}"]`)?.remove();
+  if (GAME.activeTab === id) {
+    const newId = GAME.openTabs[GAME.openTabs.length - 1] || 'welcome';
+    GAME.openTabs.includes('welcome') || GAME.openTabs.push('welcome');
+    switchTab(newId);
+  }
+}
+
+function setActiveFile(id) {
+  document.querySelectorAll('.file-item').forEach(el => {
+    el.classList.toggle('active', el.id === 'fi_' + id);
+  });
+}
+
+function renderContent(id) {
+  const vc = document.getElementById('viewerContent');
+  const renderer = CONTENT[id] || CONTENT[id + '_content'];
+  if (renderer) {
+    vc.innerHTML = renderer();
+    // restore disabled state for already-added evidence
+    GAME.collectedEvidence.forEach(ev => {
+      if (ev.source === id) {
+        const btn = document.getElementById('ev_' + id) || document.getElementById('ev_' + ev.btnId);
+        if (btn) btn.disabled = true;
+      }
+    });
+  } else {
+    vc.innerHTML = `<div style="padding:40px;color:var(--text-dim);font-size:0.8rem;">Dosya yüklenemedi: ${id}</div>`;
+  }
+}
+
+// ============================================================
+// PASSWORD
+// ============================================================
+function checkPw(fileId, unlockedId) {
+  const inp = document.getElementById('pwInput_' + fileId);
+  const errEl = document.getElementById('pwErr_' + fileId);
+  const val = inp.value.trim().toUpperCase();
+  const correct = GAME.passwords[fileId].toUpperCase();
+  if (val === correct) {
+    GAME.solvedPasswords.add(fileId);
+    showToast('Şifre doğru! Dosya açıldı.','ok');
+    if (fileId === 'lab_encrypted') {
+      unlockHiddenFile('zoraki_itiraf');
+    }
+    renderContent(fileId);
+    buildFileTree();
+  } else {
+    errEl.style.display = 'block';
+    errEl.style.animation = 'none';
+    setTimeout(() => errEl.style.animation = '', 10);
+    inp.value = '';
+    inp.focus();
+  }
+}
+
+function unlockHiddenFile(id) {
+  GAME.unlockedFiles.add(id);
+  buildFileTree();
+  showToast('Gizli dosya açıldı: ' + id, 'warn');
+}
+
+// ============================================================
+// EVIDENCE
+// ============================================================
+function addEvidence(note, source, critical=false) {
+  if (GAME.collectedEvidence.find(e => e.source === source)) {
+    showToast('Bu delil zaten eklendi.','warn');
+    return;
+  }
+  GAME.collectedEvidence.push({note, source, critical});
+  const board = document.getElementById('evidenceBoard');
+  const el = document.createElement('div');
+  el.className = 'evidence-item' + (critical ? ' critical' : '');
+  el.innerHTML = `
+    <div class="ev-tag">${critical ? '⚠ KRİTİK' : '◉ DELİL'} — ${GAME.collectedEvidence.length.toString().padStart(2,'0')}</div>
+    <div class="ev-title">${source.toUpperCase()}</div>
+    <div class="ev-note">${note}</div>`;
+  board.appendChild(el);
+
+  const btn = document.getElementById('ev_' + source);
+  if (btn) btn.disabled = true;
+
+  showToast(critical ? '⚠ Kritik delil eklendi!' : 'Delil panoya eklendi!', critical ? 'err' : 'ok');
+}
+
+// ============================================================
+// ACCUSATION
+// ============================================================
+function openAccuse() {
+  if (GAME.collectedEvidence.length < 3) {
+    showToast('Yeterli delil yok! En az 3 delil toplamalısın.','warn');
+    return;
+  }
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-title">⚖ SUÇLAMA YAP</div>
+      <div class="modal-sub">Hangi şüpheliyi Kemal Yıldız'ı öldürmekle suçluyorsun?</div>
+      <div class="suspect-choices">
+        ${[
+          {id:'leyla', emoji:'👩', name:'Leyla Karahan', role:'Komşu / Eski Öğrenci'},
+          {id:'murat', emoji:'👨', name:'Murat Yılmaz', role:'Apartman Görevlisi'},
+          {id:'sinem', emoji:'👩‍💼', name:'Sinem Doğan', role:'Komşu / Avukat'},
+          {id:'tarkan', emoji:'👮', name:'Tarkan Arslan', role:'Güvenlik Görevlisi'},
+        ].map(s => `
+          <div class="suspect-choice" onclick="selectSuspect('${s.id}', this)">
+            <span class="sc-photo">${s.emoji}</span>
+            <div><div class="sc-name">${s.name}</div><div class="sc-role">${s.role}</div></div>
+          </div>`).join('')}
+      </div>
+      <div class="modal-btns">
+        <button class="modal-btn cancel" onclick="this.closest('.modal-overlay').remove()">İPTAL</button>
+        <button class="modal-btn confirm" id="confirmAccuse" onclick="makeAccusation()">SUÇLA</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  GAME.selectedSuspect = null;
+}
+
+function selectSuspect(id, el) {
+  document.querySelectorAll('.suspect-choice').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  GAME.selectedSuspect = id;
+}
+
+function makeAccusation() {
+  if (!GAME.selectedSuspect) {
+    showToast('Bir şüpheli seçmelisin!', 'warn');
+    return;
+  }
+  document.querySelector('.modal-overlay')?.remove();
+  showEnding(GAME.selectedSuspect === GAME.killer);
+}
+
+// ============================================================
+// ENDING
+// ============================================================
+function showEnding(correct) {
+  const el = document.createElement('div');
+  el.className = 'ending-screen';
+
+  const evidence = GAME.collectedEvidence.length;
+
+  if (correct) {
+    el.innerHTML = `
+      <div class="ending-result correct">DAVA ÇÖZÜLDÜ</div>
+      <div class="ending-body">
+        Tebrikler, Dedektif.<br>
+        <strong>Leyla Karahan</strong> Profesör Kemal Yıldız'ı öldürmekle suçlandı ve tutuklandı.<br>
+        ${evidence} delil topladın.
+      </div>
+      <div class="ending-detail">
+        <h3>Gerçek Ne Oldu?</h3>
+        Leyla Karahan, 2019'da doktora programından haksız yere ihraç edildiğine inandığı eski hocası Kemal Yıldız'dan yıllarca intikam planı kurdu.
+        18 Ocak 2024 akşamı eczaneden aldığı lorazepam ile çayı ilaçladı.
+        Kemal uyuşunca mutfakta granit havan eliyle vurdu.
+        Kaçarken sol topuğunu incitti. Ayakkabılarını attı ama DNA, telefon kayıtları, kamera görüntüleri ve kendi not defteri onu ele verdi.<br><br>
+        Leyla Karahan ağırlıklı suç biçiminde hapis cezasına çarptırıldı. Ağabeyi Ali Karahan ise yardım ve yataklıktan yargılandı.
+      </div>
+      <button class="ending-restart" onclick="location.reload()">↺ YENİDEN BAŞLA</button>`;
+  } else {
+    const names = {murat:'Murat Yılmaz', sinem:'Sinem Doğan', tarkan:'Tarkan Arslan'};
+    el.innerHTML = `
+      <div class="ending-result wrong">YANLIŞ SONUÇ</div>
+      <div class="ending-body">
+        <strong>${names[GAME.selectedSuspect]}</strong> suçsuz bulundu ve serbest bırakıldı.<br>
+        Gerçek katil kaçtı. Dava kapandı.<br><br>
+        Yeterli delil toplamadan acele ettin.
+      </div>
+      <div class="ending-detail">
+        <h3>İpuçlarını Kaçırdın</h3>
+        DNA analizi, lorazepam kaydı, kamera görüntüleri ve el yazısı itiraf — tüm bunlar <strong>Leyla Karahan</strong>'a işaret ediyordu.
+        Şifreli dosyalar açılmadan dava tamamlanamaz.<br><br>
+        Dosyaları daha dikkatlice incele: Tarkan'ın sorgusunda lab kodu var, Leyla'nın çocukluğu kilit şifresi.
+      </div>
+      <button class="ending-restart" onclick="location.reload()">↺ TEKRAR DENE</button>`;
+  }
+  document.body.appendChild(el);
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showToast(msg, type='ok') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = `<div class="toast-title">${type==='err'?'⚠ KRİTİK':type==='warn'?'! UYARI':'✓ BİLGİ'}</div>${msg}`;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.5s'; setTimeout(()=>t.remove(),500); }, 3000);
+}
+
+function showAlert() {
+  showToast('Bu sistem İstanbul Emniyet Müdürlüğü tarafından yetkili personele tahsis edilmiştir. Tüm erişimler kaydedilmektedir.','warn');
+}
+
+function playAudio(btn) {
+  btn.textContent = btn.textContent === '▶' ? '⏸' : '▶';
+}
+
+function startGame() {
+  GAME.gameStarted = true;
+  // unlock all non-hidden, non-locked files
+  FILE_SYSTEM.forEach(f => f.children.forEach(c => {
+    if (!c.hidden) GAME.unlockedFiles.add(c.id);
+  }));
+  openFile('olay_raporu');
+  showToast('Soruşturma başladı. İyi şanslar, Dedektif.','ok');
+}
+
+// ============================================================
+// CLOCK
+// ============================================================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clockDisplay').textContent =
+    now.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ============================================================
+// BOOT SEQUENCE
+// ============================================================
+const BOOT_MESSAGES = [
+  {msg:'PROMETHEUS v2.1.4 yükleniyor...', cls:''},
+  {msg:'[OK] Kernel bileşenleri başlatılıyor', cls:'ok'},
+  {msg:'[OK] Ağ arayüzü eth0 etkin', cls:'ok'},
+  {msg:'[OK] Şifrelenmiş disk bağlandı /dev/sda1', cls:'ok'},
+  {msg:'[WARN] 3 şifreli dosya tespit edildi', cls:'warn'},
+  {msg:'[OK] Adli analiz modülü aktif', cls:'ok'},
+  {msg:'[OK] DNA veritabanı bağlantısı kuruldu', cls:'ok'},
+  {msg:'[OK] GSM kayıt sistemi başlatıldı', cls:'ok'},
+  {msg:'[WARN] Güvenlik seviyesi YÜKSEK — yetkili personel', cls:'warn'},
+  {msg:'[OK] Kamera kayıtları 5/5 yüklendi', cls:'ok'},
+  {msg:'[OK] Dava CIN-2024-0118 aktif hâle getirildi', cls:'ok'},
+  {msg:'[SYS] PROMETHEUS hazır.', cls:'ok'},
+];
+
+function runBoot() {
+  const logEl = document.getElementById('bootLog');
+  const barEl = document.getElementById('bootBar');
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < BOOT_MESSAGES.length) {
+      const m = BOOT_MESSAGES[i];
+      const line = document.createElement('div');
+      line.textContent = m.msg;
+      if (m.cls) line.className = m.cls;
+      logEl.appendChild(line);
+      barEl.style.width = ((i+1)/BOOT_MESSAGES.length * 100) + '%';
+      i++;
+    } else {
+      clearInterval(interval);
+      setTimeout(() => {
+        document.getElementById('bootScreen').classList.add('hidden');
+        document.getElementById('app').classList.add('visible');
+        buildFileTree();
+        renderContent('welcome');
+      }, 600);
+    }
+  }, 200);
+}
+
+runBoot();
+</script>
+</body>
+</html>
