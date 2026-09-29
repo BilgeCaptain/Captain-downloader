@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sohbet</title>
+<style>
+:root{--bg:#eef3f1;--panel:#fff;--ink:#16302b;--mute:#6b8580;--line:#dbe6e2;--me:#0f766e;--meink:#fff;--them:#e6efec;--accent:#0f766e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1917;--panel:#152421;--ink:#e3f0ec;--mute:#8aa8a1;--line:#24403a;--me:#14a094;--meink:#04201c;--them:#1f3531;--accent:#14a094}}
+:root[data-theme="dark"]{--bg:#0e1917;--panel:#152421;--ink:#e3f0ec;--mute:#8aa8a1;--line:#24403a;--me:#14a094;--meink:#04201c;--them:#1f3531;--accent:#14a094}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+.app{height:100%;display:flex;max-width:1000px;margin:0 auto;background:var(--panel);border-inline:1px solid var(--line)}
+.side{width:300px;border-right:1px solid var(--line);display:flex;flex-direction:column}
+.side h1{font-size:20px;margin:0;padding:16px}
+.list{overflow-y:auto;flex:1}
+.c{display:flex;gap:12px;padding:12px 16px;cursor:pointer;align-items:center;border:0;background:none;width:100%;text-align:left;color:inherit;font:inherit}
+.c:hover,.c.on{background:var(--them)}
+.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;flex:none}
+.c b{display:block}.c small{color:var(--mute);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
+.chat{flex:1;display:flex;flex-direction:column;min-width:0}
+.top{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.back{display:none;border:0;background:none;font-size:22px;color:var(--ink);cursor:pointer}
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:6px}
+.m{max-width:75%;padding:8px 12px;border-radius:14px;background:var(--them);overflow-wrap:anywhere}
+.m.me{align-self:flex-end;background:var(--me);color:var(--meink)}
+.m time{display:block;font-size:11px;opacity:.65;text-align:right}
+.typing{color:var(--mute);font-size:13px;padding:0 16px 6px;min-height:20px}
+form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+input{flex:1;padding:12px 14px;border-radius:22px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+button.send{border:0;border-radius:22px;padding:0 20px;background:var(--accent);color:var(--meink);font:inherit;font-weight:700;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:640px){.side{width:100%;border:0}.chat{display:none}.app.open .side{display:none}.app.open .chat{display:flex}.back{display:block}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="side">
+    <h1>Kişiler</h1>
+    <div class="list" id="list"><p style="padding:16px;color:var(--mute)">Bağlanıyor…</p></div>
+  </aside>
+  <section class="chat">
+    <div class="top"><button class="back" id="back" aria-label="Geri">←</button><div class="av" id="tav"></div><b id="tname">Bir kişi seç</b></div>
+    <div class="msgs" id="msgs" aria-live="polite"><p style="color:var(--mute)">Soldan sitede bulunan biriyle sohbet başlat.</p></div>
+    <form id="f"><input id="in" placeholder="Mesaj yaz" autocomplete="off" aria-label="Mesaj" disabled><button class="send">Gönder</button></form>
+  </section>
+</div>
+<script>
+// ÖNEMLİ: Bunu kendine özel, tahmin edilmesi zor bir şeyle değiştir (sadece harf, rakam, tire).
+const ODA="sohbet-benim-odam-degistir-123";
+const URL_="https://ntfy.sh/"+ODA;
+const $=id=>document.getElementById(id);
+const ls={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const colors=["#0f766e","#b45309","#6d28d9","#be123c","#1d4ed8","#4d7c0f"];
+const col=id=>colors[[...id].reduce((a,c)=>a+c.charCodeAt(0),0)%colors.length];
+const hm=d=>new Date(d).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+const rid=()=>Math.random().toString(36).slice(2,10);
+let me=ls.get("uid")||rid(); ls.set("uid",me);
+let myName=ls.get("ad");
+if(!myName){myName=(prompt("Görünecek adın?")||"Misafir").trim().slice(0,24)||"Misafir";ls.set("ad",myName)}
+let people=ls.get("people")||{}, msgs=ls.get("msgs")||{}, seenIds=new Set(Object.values(msgs).flat().map(m=>m.mid)), cur=null;
+
+function avatar(el,name,id){el.textContent=(name||"?")[0].toUpperCase();el.style.background=col(id||name)}
+function post(o){return fetch(URL_,{method:"POST",body:JSON.stringify(o)})}
+function hello(){post({type:"hello",from:me,name:myName,ts:Date.now()}).catch(()=>{})}
+
+function handle(o){
+  if(!o||!o.from)return;
+  if(o.from!==me&&o.name)people[o.from]={name:o.name,seen:Math.max(o.ts||0,(people[o.from]||{}).seen||0)};
+  if(o.type==="msg"&&(o.from===me||o.to===me)&&!seenIds.has(o.mid)){
+    seenIds.add(o.mid);
+    const peer=o.from===me?o.to:o.from;
+    (msgs[peer]=msgs[peer]||[]).push({mid:o.mid,from:o.from,text:String(o.text).slice(0,1000),ts:o.ts});
+    msgs[peer].sort((a,b)=>a.ts-b.ts);
+  }
+}
+let timer;
+function refresh(){
+  clearTimeout(timer);
+  timer=setTimeout(()=>{ls.set("people",people);ls.set("msgs",msgs);drawList();drawChat()},150);
+}
+function drawList(){
+  const l=$("list"),ids=Object.keys(people);
+  l.innerHTML="";
+  if(!ids.length){l.innerHTML='<p style="padding:16px;color:var(--mute)">Henüz başka kimse yok. Linki paylaş, gelen kişi burada görünür.</p>';return}
+  ids.sort((a,b)=>people[b].seen-people[a].seen).forEach(id=>{
+    const p=people[id],on=Date.now()-p.seen<6*60000;
+    const b=document.createElement("button");b.className="c"+(id===cur?" on":"");
+    b.innerHTML='<div class="av"></div><div><b></b><small></small></div>';
+    avatar(b.querySelector(".av"),p.name,id);
+    b.querySelector("b").textContent=p.name;
+    const last=(msgs[id]||[]).at(-1);
+    b.querySelector("small").textContent=last?(last.from===me?"Sen: ":"")+last.text:(on?"Çevrimiçi":"Çevrimdışı");
+    b.onclick=()=>{cur=id;$("app").classList.add("open");$("in").disabled=false;drawList();drawChat()};
+    l.append(b);
+  });
+}
+function drawChat(){
+  if(!cur||!people[cur])return;
+  avatar($("tav"),people[cur].name,cur);$("tname").textContent=people[cur].name;
+  const box=$("msgs"),list=msgs[cur]||[];
+  box.innerHTML="";
+  if(!list.length)box.innerHTML='<p style="color:var(--mute)">Henüz mesaj yok. İlk mesajı sen yaz.</p>';
+  list.forEach(m=>{
+    const el=document.createElement("div");el.className="m"+(m.from===me?" me":"");
+    el.textContent=m.text;
+    const t=document.createElement("time");t.textContent=hm(m.ts);el.append(t);box.append(el);
+  });
+  box.scrollTop=1e9;
+}
+$("f").onsubmit=e=>{
+  e.preventDefault();
+  const v=$("in").value.trim();if(!v||!cur)return;
+  $("in").value="";
+  const o={type:"msg",mid:rid()+Date.now(),from:me,name:myName,to:cur,text:v,ts:Date.now()};
+  handle(o);refresh();
+  post(o).catch(()=>alert("Mesaj gönderilemedi. İnternet bağlantını kontrol et."));
+};
+$("back").onclick=()=>$("app").classList.remove("open");
+
+function connect(){
+  const es=new EventSource(URL_+"/sse?since=12h");
+  es.onmessage=ev=>{
+    try{const d=JSON.parse(ev.data);handle(JSON.parse(d.message));refresh()}catch(e){}
+  };
+  es.onerror=()=>{};
+}
+drawList();connect();hello();
+setInterval(()=>{if(!document.hidden)hello()},5*60000);
+</script>
+</body>
+</html>
