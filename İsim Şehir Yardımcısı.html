@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>İsim Şehir Yardımcısı</title>
+<style>
+:root{--bg:#F4F7FB;--grid:#DCE5F2;--ink:#1B2A4A;--mute:#6B7A96;--card:#FFFFFF;--acc:#D6336C;--accink:#FFFFFF;--line:#C9D5E8;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161F;--grid:#1D2535;--ink:#E6ECF7;--mute:#8E9BB5;--card:#1A2130;--acc:#FF6B9A;--accink:#12161F;--line:#2C3750;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161F;--grid:#1D2535;--ink:#E6ECF7;--mute:#8E9BB5;--card:#1A2130;--acc:#FF6B9A;--accink:#12161F;--line:#2C3750;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;color:var(--ink);font-family:ui-rounded,"Avenir Next","Segoe UI",system-ui,sans-serif;min-height:100vh}
+main{max-width:480px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:28px;line-height:1.1;margin:0 0 4px;font-weight:800;letter-spacing:-.5px}
+.sub{color:var(--mute);font-size:15px;margin:0 0 18px}
+.keys{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px}
+.k{aspect-ratio:1;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:700 20px inherit;font-family:inherit;cursor:pointer;padding:0}
+.k:focus-visible,.row:focus-visible,.go:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.k[aria-pressed="true"]{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+.res{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:6px 14px 14px}
+.empty{color:var(--mute);padding:22px 4px;text-align:center;font-size:16px}
+.head{display:flex;align-items:center;justify-content:space-between;padding:10px 0 4px}
+.big{font-size:44px;font-weight:800;color:var(--acc);line-height:1}
+.go{border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:9px 14px;font:600 14px inherit;font-family:inherit;cursor:pointer}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;border-top:1px dashed var(--line);padding:13px 2px;color:var(--ink);font-family:inherit;cursor:pointer}
+.em{font-size:22px;width:30px;text-align:center}
+.lb{display:block;font-size:13px;color:var(--mute)}
+.v{display:block;font-size:22px;font-weight:700}
+.n{margin-left:auto;font-size:12px;color:var(--mute)}
+.note{color:var(--mute);font-size:13px;margin:12px 2px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>İsim Şehir Yardımcısı</h1>
+<p class="sub">Harfi seç, cevaplar gelsin. Bir cevaba dokununca başka seçenek çıkar.</p>
+<div class="keys" id="keys"></div>
+<div class="res" id="res"><div class="empty">Önce bir harf seç.</div></div>
+<p class="note">Şehir Türkiye'den. "(ilçe)" yazanlar il değil, ilçedir. Türkçede J ve Ğ ile başlayan il/ilçe pek olmadığı için harf listesinde yok.</p>
+</main>
+<script>
+var D={
+"A":"Ahmet,Ayşe,Ali|Ankara,Adana,Antalya|Aslan,Ayı,Arı|Ayva,Armut,Avokado|Anahtar,Araba,Abajur|Ajda Pekkan,Ahmet Kaya,Aleyna Tilki",
+"B":"Burak,Betül,Berk|Bursa,Balıkesir,Bolu|Balık,Baykuş,Bülbül|Biber,Badem,Bamya|Bardak,Bıçak,Battaniye|Barış Manço,Bülent Ersoy,Barış Akarsu",
+"C":"Can,Cem,Cansu|Ceyhan (ilçe),Cizre (ilçe)|Ceylan,Civciv,Cırcırböceği|Ceviz,Cehri|Cetvel,Cüzdan,Cam|Cem Karaca,Candan Erçetin,Cem Yılmaz",
+"Ç":"Çağla,Çağan,Çiğdem|Çanakkale,Çorum,Çankırı|Çita,Çakal,Çekirge|Çilek,Çam,Çınar|Çanta,Çatal,Çekiç|Çağatay Ulusoy,Çelik,Çiğdem Tunç",
+"D":"Deniz,Derya,Doğan|Denizli,Diyarbakır,Düzce|Deve,Domuz,Delfin|Domates,Defne,Dut|Defter,Dolap,Diş fırçası|Demet Akalın,Duman,Derya Uluğ",
+"E":"Emre,Elif,Ebru|Edirne,Erzurum,Eskişehir|Eşek,Engerek|Elma,Erik,Enginar|Eldiven,Elbise,Etek|Ebru Gündeş,Erkin Koray,Ezhel",
+"F":"Fatma,Furkan,Funda|Fethiye (ilçe),Fatsa (ilçe)|Fil,Fare,Fok|Fasulye,Fındık,Fesleğen|Fırça,Fincan,Fener|Funda Arar,Fazıl Say,Fikret Kızılok",
+"G":"Gökhan,Gül,Gamze|Gaziantep,Giresun,Gümüşhane|Güvercin,Geyik,Goril|Gül,Greyfurt,Gelincik|Gözlük,Gitar,Gömlek|Gülşen,Göksel,Gülben Ergen",
+"H":"Hasan,Hande,Hülya|Hatay,Hakkari|Horoz,Hamster,Hindi|Havuç,Hardal,Hurma|Halı,Havlu,Harita|Hadise,Hande Yener,Haluk Levent",
+"I":"Irmak,Ilgaz,Ilgın|Isparta,Iğdır|Istakoz|Isırgan,Ihlamur|Izgara,Isıtıcı,Işıldak|Irmak Arıcı,Işın Karaca",
+"İ":"İpek,İlker,İrem|İstanbul,İzmir|İnek,İguana|İncir,İğde,İspanak|İp,İğne,İskemle|İbrahim Tatlıses,İzel,İlhan İrem",
+"K":"Kemal,Kübra,Kerem|Kars,Kayseri,Konya|Kedi,Köpek,Kaplan|Kiraz,Karpuz,Kayısı|Kalem,Kitap,Kapı|Kenan Doğulu,Kıraç,Kıvanç Tatlıtuğ",
+"L":"Leyla,Levent,Lale|Lüleburgaz (ilçe),Lapseki (ilçe)|Leopar,Leylek,Lama|Limon,Lale,Lavanta|Lamba,Lavabo,Leğen|Leman Sam,Levent Yüksel,Lale Mansur",
+"M":"Mehmet,Merve,Murat|Muğla,Malatya,Mersin|Maymun,Martı,Manda|Muz,Mandalina,Mısır|Masa,Makas,Mikrofon|Mustafa Sandal,Mabel Matiz,Murat Boz",
+"N":"Necati,Nur,Nehir|Nevşehir,Niğde|Narval,Nilgau|Nane,Nar,Nergis|Nevresim,Not defteri|Nilüfer,Nazan Öncel,Nil Karaibrahimgil",
+"O":"Oğuz,Onur,Orhan|Ordu,Osmaniye|Orangutan,Okapi,Orka|Orkide,Okaliptüs|Oyuncak,Ocak,Oje|Oğuzhan Koç,Orhan Gencebay,Okan Bayülgen",
+"Ö":"Ömer,Özlem,Özge|Ödemiş (ilçe)|Ördek,Öküz,Örümcek|Ökseotu,Öküzgözü|Önlük,Örtü,Ölçü kabı|Özcan Deniz,Özlem Tekin,Özge Özpirinçci",
+"P":"Pelin,Polat,Pınar|Pendik (ilçe),Polatlı (ilçe)|Papağan,Penguen,Panda|Portakal,Patates,Patlıcan|Pantolon,Perde,Pil|Pinhani,Pelin Karahan,Perihan Savaş",
+"R":"Ramazan,Rabia,Recep|Rize|Rakun,Ren geyiği|Reyhan,Roka,Ravent|Radyo,Raf,Robot|Rafet El Roman,Reynmen,Ruhi Su",
+"S":"Selin,Samet,Sema|Sivas,Samsun,Sinop|Sincap,Solucan,Sülün|Soğan,Sarımsak,Salatalık|Saat,Sandalye,Sabun|Sezen Aksu,Sertab Erener,Sıla",
+"Ş":"Şule,Şeyma,Şevket|Şanlıurfa,Şırnak|Şahin,Şempanze|Şeftali,Şalgam,Şakayık|Şemsiye,Şişe,Şapka|Şebnem Ferah,Şener Şen,Şevval Sam",
+"T":"Tuğba,Tolga,Tarık|Trabzon,Tokat,Tekirdağ|Tavuk,Tilki,Tavşan|Turp,Tere,Tarçın|Telefon,Tabak,Tarak|Tarkan,Teoman,Tarık Akan",
+"U":"Utku,Ufuk,Ulaş|Uşak|Uskumru,Uğurböceği|Unutmabeni|Uzaktan kumanda,Ustura,Uyku tulumu|Uğur Işılak,Uğur Yücel,Uzay Heparı",
+"Ü":"Ümit,Ümran,Ülkü|Ünye (ilçe),Ürgüp (ilçe)|Üveyik|Üzüm,Üvez|Ütü,Üçgen cetvel|Ümit Besen,Ümit Sayın",
+"V":"Veli,Vildan,Volkan|Van|Vaşak,Vatoz|Vanilya,Vişne|Vazo,Vida,Valiz|Volkan Konak,Vega",
+"Y":"Yusuf,Yasemin,Yağmur|Yalova,Yozgat|Yılan,Yunus,Yarasa|Yasemin,Yonca,Yulaf|Yastık,Yatak,Yorgan|Yıldız Tilbe,Yalın,Yavuz Bingöl",
+"Z":"Zeynep,Zeki,Zehra|Zonguldak|Zebra,Zürafa|Zeytin,Zencefil,Zambak|Zil,Zarf,Zımba|Zeki Müren,Zeynep Bastık,Zuhal Olcay"
+};
+var LB=["İsim","Şehir","Hayvan","Bitki","Eşya","Artist"],EM=["🧑","🏙️","🐾","🌿","📦","🎤"];
+var cur=null,ix=[0,0,0,0,0,0];
+var keys=document.getElementById("keys"),res=document.getElementById("res");
+Object.keys(D).forEach(function(l){
+ var b=document.createElement("button");b.className="k";b.textContent=l;b.setAttribute("aria-pressed","false");
+ b.onclick=function(){pick(l)};keys.appendChild(b);
+});
+function pick(l){cur=l;ix=[0,0,0,0,0,0];draw();}
+function shuffle(){ix=ix.map(function(){return Math.floor(Math.random()*9)});draw();}
+function draw(){
+ Array.prototype.forEach.call(keys.children,function(b){b.setAttribute("aria-pressed",String(b.textContent===cur))});
+ var c=D[cur].split("|");
+ res.innerHTML="";
+ var h=document.createElement("div");h.className="head";
+ h.innerHTML='<span class="big">'+cur+'</span>';
+ var g=document.createElement("button");g.className="go";g.textContent="Hepsini karıştır";g.onclick=shuffle;h.appendChild(g);
+ res.appendChild(h);
+ c.forEach(function(s,i){
+  var o=s.split(","),k=ix[i]%o.length;
+  var r=document.createElement("button");r.className="row";
+  r.innerHTML='<span class="em">'+EM[i]+'</span><span><span class="lb">'+LB[i]+'</span><span class="v"></span></span><span class="n">'+(o.length>1?(k+1)+"/"+o.length:"")+'</span>';
+  r.querySelector(".v").textContent=o[k];
+  r.onclick=function(){ix[i]=k+1;draw();};
+  res.appendChild(r);
+ });
+}
+</script>
+</body>
+</html>
