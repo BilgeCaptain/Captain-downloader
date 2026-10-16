@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>İsim Şehir Yardımcısı</title>
+<style>
+:root{--bg:#F4F7FB;--grid:#DCE5F2;--ink:#1B2A4A;--mute:#6B7A96;--card:#FFFFFF;--acc:#D6336C;--accink:#FFFFFF;--line:#C9D5E8;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161F;--grid:#1D2535;--ink:#E6ECF7;--mute:#8E9BB5;--card:#1A2130;--acc:#FF6B9A;--accink:#12161F;--line:#2C3750;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161F;--grid:#1D2535;--ink:#E6ECF7;--mute:#8E9BB5;--card:#1A2130;--acc:#FF6B9A;--accink:#12161F;--line:#2C3750;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;color:var(--ink);font-family:ui-rounded,"Avenir Next","Segoe UI",system-ui,sans-serif;min-height:100vh}
+main{max-width:480px;margin:0 auto;padding:20px 16px 90px}
+h1{font-size:28px;line-height:1.1;margin:0 0 4px;font-weight:800;letter-spacing:-.5px}
+.sub{color:var(--mute);font-size:15px;margin:0 0 18px}
+.keys{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px}
+.k{aspect-ratio:1;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:700 20px inherit;font-family:inherit;cursor:pointer;padding:0}
+.k:focus-visible,.row:focus-visible,.go:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.k[aria-pressed="true"]{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+.res{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:6px 14px 14px}
+.empty{color:var(--mute);padding:22px 4px;text-align:center;font-size:16px}
+.head{display:flex;align-items:center;justify-content:space-between;padding:10px 0 4px}
+.big{font-size:44px;font-weight:800;color:var(--acc);line-height:1}
+.go{border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:9px 14px;font:600 14px inherit;font-family:inherit;cursor:pointer}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;border-top:1px dashed var(--line);padding:13px 2px;color:var(--ink);font-family:inherit;cursor:pointer}
+.em{font-size:22px;width:30px;text-align:center}
+.lb{display:block;font-size:13px;color:var(--mute)}
+.v{display:block;font-size:22px;font-weight:700}
+.n{margin-left:auto;font-size:12px;color:var(--mute)}
+.note{color:var(--mute);font-size:13px;margin:12px 2px 0}
+.catbtn{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:46px;height:46px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);font-size:22px;line-height:1;padding:0;cursor:pointer;opacity:.85;z-index:5}
+.catbtn:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.cat{position:fixed;top:0;right:0;bottom:0;left:0;z-index:100;display:flex;align-items:center;justify-content:center;background:#FFE9D2;cursor:pointer}
+.cat[hidden]{display:none}
+.cat svg{width:min(80vw,70vh);height:auto}
+</style>
+</head>
+<body>
+<main>
+<h1>İsim Şehir Yardımcısı</h1>
+<p class="sub">Harfi seç, cevaplar gelsin. Bir cevaba dokununca başka seçenek çıkar.</p>
+<div class="keys" id="keys"></div>
+<div class="res" id="res"><div class="empty">Önce bir harf seç.</div></div>
+<p class="note">Şehir Türkiye'den. "(ilçe)" yazanlar il değil, ilçedir. Türkçede J ve Ğ ile başlayan il/ilçe pek olmadığı için harf listesinde yok.</p>
+<button class="catbtn" id="catbtn" aria-label="Kedi" aria-expanded="false">🐱</button>
+<div class="cat" id="cat" hidden>
+<svg viewBox="0 0 200 180" role="img" aria-label="Sevimli bir kedi">
+<polygon class="cf" points="28,78 42,12 88,46"/><polygon class="cf" points="172,78 158,12 112,46"/>
+<polygon points="42,64 48,32 70,48" fill="#F4A6B8"/><polygon points="158,64 152,32 130,48" fill="#F4A6B8"/>
+<ellipse class="cf" cx="100" cy="104" rx="74" ry="64"/>
+<path d="M100 48v16M86 51l3 13M114 51l-3 13" stroke="rgba(0,0,0,.28)" stroke-width="4" stroke-linecap="round" fill="none"/>
+<ellipse cx="72" cy="98" rx="13" ry="14" fill="#FFD54A"/><ellipse cx="128" cy="98" rx="13" ry="14" fill="#FFD54A"/>
+<ellipse cx="72" cy="98" rx="5" ry="11" fill="#1b1b1b"/><ellipse cx="128" cy="98" rx="5" ry="11" fill="#1b1b1b"/>
+<circle cx="75" cy="92" r="3" fill="#fff"/><circle cx="131" cy="92" r="3" fill="#fff"/>
+<polygon points="92,118 108,118 100,128" fill="#F4A6B8"/>
+<path d="M100 128q-8 12-20 6M100 128q8 12 20 6" stroke="#1b1b1b" stroke-width="3" stroke-linecap="round" fill="none"/>
+<path d="M58 122l-34-6M58 130l-34 6M142 122l34-6M142 130l34 6" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
+</svg>
+</div>
+</main>
+<script>
+var D={
+"A":"Ayşe,Aslı,Aylin|Ankara,Adana,Antalya|Aslan,Ayı,Arı|Ayva,Armut,Avokado|Anahtar,Araba,Abajur|Ajda Pekkan,Ahmet Kaya,Aleyna Tilki",
+"B":"Betül,Buse,Berna|Bursa,Balıkesir,Bolu|Balık,Baykuş,Bülbül|Biber,Badem,Bamya|Bardak,Bıçak,Battaniye|Barış Manço,Bülent Ersoy,Barış Akarsu",
+"C":"Cansu,Ceren,Cemre|Ceyhan (ilçe),Cizre (ilçe)|Ceylan,Civciv,Cırcırböceği|Ceviz,Cehri|Cetvel,Cüzdan,Cam|Cem Karaca,Candan Erçetin,Cem Yılmaz",
+"Ç":"Çağla,Çiğdem,Çisil|Çanakkale,Çorum,Çankırı|Çita,Çakal,Çekirge|Çilek,Çam,Çınar|Çanta,Çatal,Çekiç|Çağatay Ulusoy,Çelik,Çiğdem Tunç",
+"D":"Derya,Defne,Duygu|Denizli,Diyarbakır,Düzce|Deve,Domuz,Delfin|Domates,Defne,Dut|Defter,Dolap,Diş fırçası|Demet Akalın,Duman,Derya Uluğ",
+"E":"Elif,Ebru,Ece|Edirne,Erzurum,Eskişehir|Eşek,Engerek|Elma,Erik,Enginar|Eldiven,Elbise,Etek|Ebru Gündeş,Erkin Koray,Ezhel",
+"F":"Fatma,Funda,Feyza|Fethiye (ilçe),Fatsa (ilçe)|Fil,Fare,Fok|Fasulye,Fındık,Fesleğen|Fırça,Fincan,Fener|Funda Arar,Fazıl Say,Fikret Kızılok",
+"G":"Gül,Gamze,Gizem|Gaziantep,Giresun,Gümüşhane|Güvercin,Geyik,Goril|Gül,Greyfurt,Gelincik|Gözlük,Gitar,Gömlek|Gülşen,Göksel,Gülben Ergen",
+"H":"Hande,Hülya,Hatice|Hatay,Hakkari|Horoz,Hamster,Hindi|Havuç,Hardal,Hurma|Halı,Havlu,Harita|Hadise,Hande Yener,Haluk Levent",
+"I":"Irmak,Ilgın,Işıl|Isparta,Iğdır|Istakoz|Isırgan,Ihlamur|Izgara,Isıtıcı,Işıldak|Irmak Arıcı,Işın Karaca",
+"İ":"İpek,İrem,İlayda|İstanbul,İzmir|İnek,İguana|İncir,İğde,İspanak|İp,İğne,İskemle|İbrahim Tatlıses,İzel,İlhan İrem",
+"K":"Kübra,Kader,Kardelen|Kars,Kayseri,Konya|Kedi,Köpek,Kaplan|Kiraz,Karpuz,Kayısı|Kalem,Kitap,Kapı|Kenan Doğulu,Kıraç,Kıvanç Tatlıtuğ",
+"L":"Leyla,Lale,Lara|Lüleburgaz (ilçe),Lapseki (ilçe)|Leopar,Leylek,Lama|Limon,Lale,Lavanta|Lamba,Lavabo,Leğen|Leman Sam,Levent Yüksel,Lale Mansur",
+"M":"Merve,Melek,Meltem|Muğla,Malatya,Mersin|Maymun,Martı,Manda|Muz,Mandalina,Mısır|Masa,Makas,Mikrofon|Mustafa Sandal,Mabel Matiz,Murat Boz",
+"N":"Nur,Nazlı,Neslihan|Nevşehir,Niğde|Narval,Nilgau|Nane,Nar,Nergis|Nevresim,Not defteri|Nilüfer,Nazan Öncel,Nil Karaibrahimgil",
+"O":"Oya,Oylum|Ordu,Osmaniye|Orangutan,Okapi,Orka|Orkide,Okaliptüs|Oyuncak,Ocak,Oje|Oğuzhan Koç,Orhan Gencebay,Okan Bayülgen",
+"Ö":"Özlem,Özge,Öykü|Ödemiş (ilçe)|Ördek,Öküz,Örümcek|Ökseotu,Öküzgözü|Önlük,Örtü,Ölçü kabı|Özcan Deniz,Özlem Tekin,Özge Özpirinçci",
+"P":"Pelin,Pınar,Pervin|Pendik (ilçe),Polatlı (ilçe)|Papağan,Penguen,Panda|Portakal,Patates,Patlıcan|Pantolon,Perde,Pil|Pinhani,Pelin Karahan,Perihan Savaş",
+"R":"Rabia,Rüya,Reyhan|Rize|Rakun,Ren geyiği|Reyhan,Roka,Ravent|Radyo,Raf,Robot|Rafet El Roman,Reynmen,Ruhi Su",
+"S":"Selin,Sema,Songül|Sivas,Samsun,Sinop|Sincap,Solucan,Sülün|Soğan,Sarımsak,Salatalık|Saat,Sandalye,Sabun|Sezen Aksu,Sertab Erener,Sıla",
+"Ş":"Şule,Şeyma,Şeyda|Şanlıurfa,Şırnak|Şahin,Şempanze|Şeftali,Şalgam,Şakayık|Şemsiye,Şişe,Şapka|Şebnem Ferah,Şener Şen,Şevval Sam",
+"T":"Tuğba,Tülin,Tuba|Trabzon,Tokat,Tekirdağ|Tavuk,Tilki,Tavşan|Turp,Tere,Tarçın|Telefon,Tabak,Tarak|Tarkan,Teoman,Tarık Akan",
+"U":"Umay,Ulviye|Uşak|Uskumru,Uğurböceği|Unutmabeni|Uzaktan kumanda,Ustura,Uyku tulumu|Uğur Işılak,Uğur Yücel,Uzay Heparı",
+"Ü":"Ülkü,Ümran,Ümmühan|Ünye (ilçe),Ürgüp (ilçe)|Üveyik|Üzüm,Üvez|Ütü,Üçgen cetvel|Ümit Besen,Ümit Sayın",
+"V":"Vildan,Vahide,Vuslat|Van|Vaşak,Vatoz|Vanilya,Vişne|Vazo,Vida,Valiz|Volkan Konak,Vega",
+"Y":"Yasemin,Yeliz,Yıldız|Yalova,Yozgat|Yılan,Yunus,Yarasa|Yasemin,Yonca,Yulaf|Yastık,Yatak,Yorgan|Yıldız Tilbe,Yalın,Yavuz Bingöl",
+"Z":"Zeynep,Zehra,Zeliha|Zonguldak|Zebra,Zürafa|Zeytin,Zencefil,Zambak|Zil,Zarf,Zımba|Zeki Müren,Zeynep Bastık,Zuhal Olcay"
+};
+var LB=["İsim","Şehir","Hayvan","Bitki","Eşya","Artist"],EM=["🧑","🏙️","🐾","🌿","📦","🎤"];
+var cur=null,ix=[0,0,0,0,0,0];
+var keys=document.getElementById("keys"),res=document.getElementById("res");
+Object.keys(D).forEach(function(l){
+ var b=document.createElement("button");b.className="k";b.textContent=l;b.setAttribute("aria-pressed","false");
+ b.onclick=function(){pick(l)};keys.appendChild(b);
+});
+function pick(l){cur=l;ix=[0,0,0,0,0,0];draw();}
+function shuffle(){ix=ix.map(function(){return Math.floor(Math.random()*9)});draw();}
+function draw(){
+ Array.prototype.forEach.call(keys.children,function(b){b.setAttribute("aria-pressed",String(b.textContent===cur))});
+ var c=D[cur].split("|");
+ res.innerHTML="";
+ var h=document.createElement("div");h.className="head";
+ h.innerHTML='<span class="big">'+cur+'</span>';
+ var g=document.createElement("button");g.className="go";g.textContent="Hepsini karıştır";g.onclick=shuffle;h.appendChild(g);
+ res.appendChild(h);
+ c.forEach(function(s,i){
+  var o=s.split(","),k=ix[i]%o.length;
+  var r=document.createElement("button");r.className="row";
+  r.innerHTML='<span class="em">'+EM[i]+'</span><span><span class="lb">'+LB[i]+'</span><span class="v"></span></span><span class="n">'+(o.length>1?(k+1)+"/"+o.length:"")+'</span>';
+  r.querySelector(".v").textContent=o[k];
+  r.onclick=function(){ix[i]=k+1;draw();};
+  res.appendChild(r);
+ });
+}
+var CC=["#F2A65A","#9AA5B8","#EBD9B4","#4A4A57"],ci=0,pushed=false;
+var cb=document.getElementById("catbtn"),cd=document.getElementById("cat");
+function hideCat(){cd.hidden=true;cb.setAttribute("aria-expanded","false");}
+function showCat(){
+ Array.prototype.forEach.call(cd.querySelectorAll(".cf"),function(e){e.setAttribute("fill",CC[ci%CC.length])});ci++;
+ cd.hidden=false;cb.setAttribute("aria-expanded","true");
+ try{history.pushState({cat:1},"");pushed=true;}catch(e){pushed=false;}
+}
+cb.onclick=showCat;
+cd.onclick=function(){
+ if(pushed){pushed=false;try{history.back();setTimeout(hideCat,300);return;}catch(e){}}
+ hideCat();
+};
+window.addEventListener("popstate",function(){pushed=false;hideCat();});
+window.addEventListener("pageshow",hideCat);
+</script>
+</body>
+</html>
