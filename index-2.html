@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bizim Albümümüz</title>
+<style>
+:root{--bg:#fdf6f4;--surf:#fff;--ink:#3b2a2f;--mute:#8a7479;--acc:#d6456b;--on:#fff;--line:#f0dde1;--sh:0 6px 20px rgba(120,50,70,.14);color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1417;--surf:#2a1e23;--ink:#f6e8ec;--mute:#b79ea6;--acc:#ff7a9c;--on:#2a1019;--line:#3b2a31;--sh:0 6px 20px rgba(0,0,0,.45);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1c1417;--surf:#2a1e23;--ink:#f6e8ec;--mute:#b79ea6;--acc:#ff7a9c;--on:#2a1019;--line:#3b2a31;--sh:0 6px 20px rgba(0,0,0,.45);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+h1,h2{font-family:Georgia,"Times New Roman",serif;margin:0}
+h1{font-size:26px}h2{font-size:17px;margin:22px 0 8px;color:var(--acc)}
+.sub{color:var(--mute);margin:2px 0 0;font-size:14px}
+header{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 16px 4px;max-width:900px;margin:auto}
+main{padding:0 12px 110px;max-width:900px;margin:auto}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:10px 14px;background:var(--acc);color:var(--on)}
+button.ghost{background:var(--surf);color:var(--ink);border:1px solid var(--line)}
+button.danger{background:transparent;color:#d33;border:1px solid #d33}
+input[type=text],input[type=password],input[type=date]{font:inherit;width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surf);color:var(--ink)}
+.lock{max-width:340px;margin:12vh auto 0;padding:0 20px;text-align:center;display:grid;gap:10px}
+.heart{font-size:54px}.err{color:#d33;margin:0;min-height:1.2em;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:6px}
+.tile{position:relative;aspect-ratio:1;padding:0;overflow:hidden;background:var(--line);border-radius:10px}
+.tile img,.tile video{width:100%;height:100%;object-fit:cover;display:block}
+.dt{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 4px;font-size:11px;color:#fff;text-align:left;background:linear-gradient(transparent,rgba(0,0,0,.55))}
+.play{position:absolute;top:6px;right:6px;font-size:11px;background:rgba(0,0,0,.5);color:#fff;border-radius:99px;padding:2px 7px}
+.empty{text-align:center;color:var(--mute);margin-top:18vh}
+.fab{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom,0px));box-shadow:var(--sh);border-radius:99px;padding:14px 20px;font-weight:600;z-index:5}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--surf);width:100%;max-width:560px;max-height:88%;overflow:auto;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:grid;gap:10px}
+.item{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center}
+.item .th{width:64px;height:64px;border-radius:10px;object-fit:cover;background:var(--line)}
+.item div{display:grid;gap:6px}
+.lb{position:fixed;inset:0;background:#000;z-index:30;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.lbm{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center}
+.lbm img,.lbm video{max-width:100%;max-height:100%}
+.nv{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);color:#fff;font-size:26px;padding:6px 14px;border-radius:99px}
+.nv.l{left:8px}.nv.r{right:8px}
+.lbp{background:var(--surf);padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));display:grid;gap:8px}
+.row{display:flex;gap:8px}.row input{flex:1;min-width:0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:14px;z-index:50}
+</style>
+</head>
+<body>
+<div id="app"><div class="lock"><div class="heart">💞</div><p class="sub">Bağlanıyor…</p></div></div>
+<div id="lb" class="lb" hidden></div>
+<div id="ov" class="ov" hidden></div>
+<script>
+const API="https://api.github.com/repos/";
+const $=s=>document.querySelector(s),app=$("#app"),lb=$("#lb"),ov=$("#ov");
+const h=(t,p={},...k)=>{const e=document.createElement(t);for(const[a,v]of Object.entries(p)){if(a==="class")e.className=v;else if(a.startsWith("on"))e.addEventListener(a.slice(2),v);else if(a in e)e[a]=v;else e.setAttribute(a,v)}e.append(...k.flat().filter(x=>x!=null&&x!==false));return e};
+const z=n=>String(n).padStart(2,"0"),ymd=d=>d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate());
+const fmt=d=>d?new Date(d+"T12:00:00").toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}):"";
+const mon=d=>d?new Date(d+"T12:00:00").toLocaleDateString("tr-TR",{month:"long",year:"numeric"}):"Tarihsiz";
+const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+let repo,token,items=[],lbId=null,io;const cache=new Map();
+const sortL=l=>l.sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.created||0)-(a.created||0));
+const enc=p=>p.split("/").map(encodeURIComponent).join("/");
+const gh=(p,o={})=>fetch(API+repo+"/contents/"+enc(p),{cache:"no-store",...o,headers:{Authorization:"Bearer "+token,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28",...o.headers}});
+const bad=r=>Object.assign(new Error("http "+r.status),{status:r.status});
+const J={"Content-Type":"application/json"};
+const b64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result.split(",")[1]);r.onerror=no;r.readAsDataURL(b)});
+const fileIn=h("input",{type:"file",accept:"image/*,video/*",multiple:true,hidden:true,onchange:pick});
+document.body.append(fileIn);
+function toast(t){const e=h("div",{class:"toast"},t);document.body.append(e);setTimeout(()=>e.remove(),3000)}
+
+async function getManifest(){
+  const r=await gh("data.json");
+  if(r.status===404)return{list:[],sha:null};
+  if(!r.ok)throw bad(r);
+  const j=await r.json();
+  const txt=new TextDecoder().decode(Uint8Array.from(atob(j.content.replace(/\s/g,"")),c=>c.charCodeAt(0)));
+  return{list:JSON.parse(txt),sha:j.sha};
+}
+async function put(p,content,sha){
+  const r=await gh(p,{method:"PUT",headers:J,body:JSON.stringify({message:"albüm",content,...(sha?{sha}:{})})});
+  if(!r.ok)throw bad(r);
+  return(await r.json()).content.sha;
+}
+async function del(p,sha){
+  const r=await gh(p,{method:"DELETE",headers:J,body:JSON.stringify({message:"sil",sha})});
+  if(!r.ok)throw bad(r);
+}
+async function mutate(fn){
+  for(let i=0;i<4;i++){
+    const m=await getManifest(),list=fn(m.list.slice());
+    try{await put("data.json",await b64(new Blob([JSON.stringify(list)])),m.sha);items=sortL(list);return}
+    catch(e){if(e.status!==409&&e.status!==422)throw e}
+  }
+  throw new Error("conflict");
+}
+function blobUrl(p,mime){
+  if(!cache.has(p))cache.set(p,gh(p,{headers:{Accept:"application/vnd.github.raw+json"}}).then(async r=>{if(!r.ok)throw bad(r);return URL.createObjectURL(new Blob([await r.arrayBuffer()],{type:mime}))}).catch(e=>{cache.delete(p);throw e}));
+  return cache.get(p);
+}
+
+const errText=e=>[401,403,404].includes(e.status)?"Anahtar ya da depo adı yanlış.":"Bağlanılamadı. İnterneti kontrol et.";
+async function start(){
+  try{const m=await getManifest();items=sortL(m.list);LS.set("album",JSON.stringify({r:repo,t:token}));openAlbum();return null}
+  catch(e){return e}
+}
+async function init(){
+  const m=location.hash.match(/^#k=(.+)$/);
+  if(m){try{LS.set("album",atob(m[1]))}catch(e){}history.replaceState(null,"",location.pathname+location.search)}
+  const s=LS.get("album");
+  if(s){
+    try{const o=JSON.parse(s);repo=o.r;token=o.t}catch(e){return showLock()}
+    const e=await start();
+    if(e){if(e.status===401)LS.del("album");showLock(errText(e))}
+  }else showLock();
+}
+function showLock(msg){
+  const r=h("input",{type:"text",placeholder:"kullaniciadi/album-data",value:repo||"",autocapitalize:"none",autocorrect:"off"});
+  const t=h("input",{type:"password",placeholder:"Erişim anahtarı (github_pat_…)",autocomplete:"current-password"});
+  const err=h("p",{class:"err"},msg||"");
+  const go=async()=>{
+    err.textContent="";repo=r.value.trim();token=t.value.trim();
+    if(!repo||!token)return err.textContent="İkisini de doldur.";
+    const e=await start();if(e)err.textContent=errText(e);
+  };
+  t.addEventListener("keydown",e=>{if(e.key==="Enter")go()});
+  app.replaceChildren(h("div",{class:"lock"},h("div",{class:"heart"},"💞"),h("h1",{},"Bizim Albümümüz"),
+    h("p",{class:"sub"},"Bu cihazda ilk giriş: depo adını ve erişim anahtarını yaz. Bir daha sormaz."),r,t,err,h("button",{onclick:go},"Aç")));
+}
+function lockNow(){LS.del("album");items=[];closeLb();showLock()}
+async function share(){
+  const u=location.origin+location.pathname+"#k="+btoa(JSON.stringify({r:repo,t:token}));
+  try{await navigator.clipboard.writeText(u);toast("Link kopyalandı. Sadece sevgiline gönder 💌")}catch(e){prompt("Bu linki sadece sevgiline gönder:",u)}
+}
+function openAlbum(){
+  app.replaceChildren(
+    h("header",{},h("div",{},h("h1",{},"Bizim Albümümüz"),h("p",{class:"sub",id:"cnt"})),
+      h("div",{class:"row"},h("button",{class:"ghost",onclick:share,title:"Sevgiliye giriş linki"},"🔗"),h("button",{class:"ghost",onclick:lockNow,title:"Bu cihazda kilitle"},"🔒"))),
+    h("main",{id:"grid"}),
+    h("button",{class:"fab",onclick:()=>fileIn.click()},"＋ Ekle"));
+  render();
+}
+function render(){
+  $("#cnt").textContent=items.length?items.length+" anı":"";
+  const g=$("#grid");g.replaceChildren();
+  if(io)io.disconnect();
+  io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);blobUrl(e.target.dataset.p,"image/jpeg").then(u=>{e.target.src=u}).catch(()=>{})}}),{rootMargin:"300px"});
+  if(!items.length){g.append(h("p",{class:"empty"},"Henüz anı yok. İlk fotoğrafınızı ya da videonuzu ekleyin 💕"));return}
+  let cur=null,box;
+  items.forEach(it=>{
+    const m=it.date?it.date.slice(0,7):"";
+    if(m!==cur){cur=m;g.append(h("h2",{},mon(it.date)));box=h("div",{class:"grid"});g.append(box)}
+    const im=it.thumb?h("img",{"data-p":it.thumb,alt:it.caption||""}):h("span",{class:"heart",style:"font-size:30px;display:grid;place-items:center;height:100%"},"🎬");
+    if(it.thumb)io.observe(im);
+    box.append(h("button",{class:"tile",onclick:()=>view(it.id)},im,it.type==="video"?h("span",{class:"play"},"▶"):null,h("span",{class:"dt"},fmt(it.date).replace(/ \d{4}$/,""))));
+  });
+  if(lbId&&!items.some(x=>x.id===lbId))closeLb();
+}
+function closeLb(){lbId=null;lb.hidden=true;lb.replaceChildren()}
+function view(id){
+  const i=items.findIndex(x=>x.id===id),it=items[i];if(!it)return;lbId=id;
+  const media=h("p",{class:"sub",style:"color:#fff"},"Yükleniyor…");
+  blobUrl(it.path,it.mime||(it.type==="video"?"video/mp4":"image/jpeg")).then(u=>{
+    if(lbId!==id)return;
+    media.replaceWith(it.type==="video"?h("video",{src:u,controls:true,autoplay:true,playsinline:""}):h("img",{src:u,alt:""}));
+  }).catch(()=>{media.textContent="Yüklenemedi."});
+  const dt=h("input",{type:"date",value:it.date||"",onchange:()=>dt.value&&save(it,{date:dt.value})});
+  const cap=h("input",{type:"text",value:it.caption||"",placeholder:"Bir not ekle…",maxLength:200,onchange:()=>save(it,{caption:cap.value})});
+  let armed=false;
+  const dl=h("button",{class:"danger",onclick:()=>{if(!armed){armed=true;dl.textContent="Emin misin? Sil";setTimeout(()=>{armed=false;dl.textContent="Sil"},3000)}else remove(it)}},"Sil");
+  const nav=d=>{const j=items.findIndex(x=>x.id===it.id)+d;if(items[j])view(items[j].id)};
+  lb.replaceChildren(
+    h("div",{class:"lbm"},media,i>0?h("button",{class:"nv l",onclick:()=>nav(-1)},"‹"):null,i<items.length-1?h("button",{class:"nv r",onclick:()=>nav(1)},"›"):null),
+    h("div",{class:"lbp"},h("div",{class:"row"},dt,dl,h("button",{class:"ghost",onclick:closeLb},"Kapat")),cap));
+  lb.hidden=false;
+}
+async function save(it,patch){
+  try{await mutate(l=>l.map(x=>x.id===it.id?{...x,...patch}:x));render()}catch(e){toast("Kaydedilemedi")}
+}
+async function remove(it){
+  try{
+    await del(it.path,it.sha).catch(()=>{});
+    if(it.thumb)await del(it.thumb,it.tsha).catch(()=>{});
+    await mutate(l=>l.filter(x=>x.id!==it.id));
+    closeLb();toast("Silindi");render();
+  }catch(e){toast("Silinemedi")}
+}
+async function shrink(f){
+  if(!f.type.startsWith("image/")||f.type==="image/gif"||f.type==="image/svg+xml")return f;
+  try{
+    const b=await createImageBitmap(f,{imageOrientation:"from-image"}),s=Math.min(1,2000/Math.max(b.width,b.height));
+    const c=document.createElement("canvas");c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);
+    c.getContext("2d").drawImage(b,0,0,c.width,c.height);
+    const o=await new Promise(r=>c.toBlob(r,"image/jpeg",.86));return o&&o.size<f.size?o:f;
+  }catch(e){return f}
+}
+async function mkThumb(f){
+  const c=document.createElement("canvas");
+  const draw=(s,w,hh)=>{const k=Math.min(1,420/Math.max(w,hh));c.width=Math.round(w*k);c.height=Math.round(hh*k);c.getContext("2d").drawImage(s,0,0,c.width,c.height)};
+  try{
+    if(f.type.startsWith("image/")){const b=await createImageBitmap(f,{imageOrientation:"from-image"});draw(b,b.width,b.height)}
+    else{
+      const v=document.createElement("video");v.muted=true;v.playsInline=true;v.preload="auto";v.src=URL.createObjectURL(f);
+      await new Promise((ok,no)=>{v.onloadeddata=ok;v.onerror=no;setTimeout(no,6000)});
+      const sk=new Promise((ok,no)=>{v.onseeked=ok;setTimeout(no,6000)});
+      v.currentTime=Math.min(0.5,(v.duration||1)/2);await sk;
+      draw(v,v.videoWidth,v.videoHeight);
+    }
+    return await new Promise(r=>c.toBlob(r,"image/jpeg",.75));
+  }catch(e){return null}
+}
+function pick(){
+  const files=[...fileIn.files];fileIn.value="";if(!files.length)return;
+  const pend=files.map(f=>({f,date:ymd(new Date(f.lastModified||Date.now())),cap:""}));
+  const st=h("p",{class:"sub"},"Tarihleri kontrol et, istersen not ekle.");
+  const go=h("button",{onclick:async()=>{
+    go.disabled=true;let fail=0;const added=[];
+    for(let i=0;i<pend.length;i++){
+      const p=pend[i];st.textContent="Yükleniyor "+(i+1)+"/"+pend.length+"…";
+      try{
+        const blob=await shrink(p.f);
+        if(blob.size>25*1048576)throw new Error("big");
+        const id=crypto.randomUUID(),mime=blob.type||p.f.type;
+        const ext=(blob.type==="image/jpeg"?"jpg":(p.f.name.split(".").pop()||"bin")).toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
+        const path="media/"+id+"."+ext,th=await mkThumb(p.f);
+        const sha=await put(path,await b64(blob));
+        let tp=null,tsha=null;
+        if(th){tp="thumbs/"+id+".jpg";tsha=await put(tp,await b64(th))}
+        added.push({id,path,thumb:tp,sha,tsha,type:p.f.type.startsWith("video/")?"video":"image",mime,date:p.date,caption:p.cap,created:Date.now()});
+      }catch(e){fail++}
+    }
+    try{if(added.length)await mutate(l=>l.concat(added))}catch(e){fail=pend.length}
+    ov.hidden=true;ov.replaceChildren();render();
+    toast(fail?fail+" dosya yüklenemedi (en fazla 25 MB)":"Eklendi 💕");
+  }},"Albüme ekle");
+  const rows=pend.map(p=>{
+    const u=URL.createObjectURL(p.f),vid=p.f.type.startsWith("video/");
+    const d=h("input",{type:"date",value:p.date,onchange:()=>{if(d.value)p.date=d.value}});
+    const c=h("input",{type:"text",placeholder:"Not (isteğe bağlı)",maxLength:200,oninput:()=>{p.cap=c.value}});
+    return h("div",{class:"item"},vid?h("video",{class:"th",src:u+"#t=0.1",muted:true}):h("img",{class:"th",src:u}),h("div",{},d,c));
+  });
+  ov.replaceChildren(h("div",{class:"sheet"},h("h2",{style:"margin:0"},pend.length+" dosya seçildi"),st,...rows,go,h("button",{class:"ghost",onclick:()=>{ov.hidden=true;ov.replaceChildren()}},"Vazgeç")));
+  ov.hidden=false;
+}
+init();
+</script>
+</body>
+</html>
