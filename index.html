@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F1B2D">
+<title>TikTok video indirici</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F5F9; --surface:#FFFFFF; --ink:#0F1B2D; --muted:#5B6B80; --line:#D5DDE8;
+  --pink:#E8325A; --cyan:#1FB5C4; --on-pink:#FFFFFF;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0E1622; --surface:#17212F; --ink:#E8EEF6; --muted:#97A6BA; --line:#2A384B;
+    --pink:#FF4D74; --cyan:#35C9D8; --on-pink:#10131A;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{height:100%}
+body{
+  margin:0; min-height:100%; background:var(--bg); color:var(--ink);
+  font-family:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  line-height:1.5; -webkit-text-size-adjust:100%;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+}
+main{max-width:34rem; margin:0 auto; padding:2.5rem 1.25rem 2rem}
+h1{font-size:clamp(2rem,8vw,2.9rem); line-height:1.05; letter-spacing:-.03em; font-weight:800; margin:0 0 .9rem}
+.lead{color:var(--muted); margin:0 0 2rem; max-width:30rem}
+label{display:block; font-weight:600; margin-bottom:.4rem}
+.field{display:flex; gap:.5rem; margin-bottom:1rem}
+input[type=url],input[type=text]{
+  flex:1; min-width:0; font:inherit; font-size:16px; color:var(--ink); background:var(--surface);
+  border:1.5px solid var(--line); border-radius:.6rem; padding:.85rem .9rem;
+}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--cyan); outline-offset:2px}
+button,.btn{
+  font:inherit; font-weight:600; cursor:pointer; border:0; border-radius:.6rem;
+  padding:.85rem 1.1rem; text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
+}
+.ghost{background:transparent; color:var(--ink); border:1.5px solid var(--line)}
+.primary{
+  width:100%; background:var(--pink); color:var(--on-pink); font-size:1.05rem; font-weight:800; padding:1rem;
+  box-shadow:4px 4px 0 var(--cyan);
+}
+.primary:active{transform:translate(2px,2px); box-shadow:2px 2px 0 var(--cyan)}
+button:disabled{opacity:.6; cursor:progress}
+#status{min-height:1.5rem; margin:1rem 0 0; color:var(--muted)}
+#status.err{color:var(--pink); font-weight:600}
+#result{
+  margin-top:1.25rem; background:var(--surface); border:1.5px solid var(--line);
+  border-radius:.8rem; padding:1rem; display:grid; grid-template-columns:6rem 1fr; gap:1rem; align-items:start;
+}
+#thumb{width:100%; aspect-ratio:9/16; object-fit:cover; border-radius:.5rem; background:var(--line)}
+#title{font-weight:600; margin:0 0 .3rem; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+#meta{margin:0 0 1rem; color:var(--muted); font-size:.92rem}
+.actions{display:grid; gap:.5rem}
+#dl{background:var(--cyan); color:#06232A; font-weight:800}
+#fallback{color:var(--ink); border:1.5px solid var(--line)}
+.note{margin-top:2rem; font-size:.85rem; color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <h1>TikTok videosunu filigransız indir</h1>
+  <p class="lead">Bağlantıyı yapıştır, video en yüksek kalitede MP4 olarak telefonuna insin.</p>
+
+  <form id="f" autocomplete="off">
+    <label for="url">Video bağlantısı</label>
+    <div class="field">
+      <input id="url" type="url" inputmode="url" placeholder="https://www.tiktok.com/@kullanici/video/…" required>
+      <button type="button" id="paste" class="ghost">Yapıştır</button>
+    </div>
+    <button type="submit" id="go" class="primary">Videoyu bul</button>
+  </form>
+
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <section id="result" hidden>
+    <img id="thumb" alt="Video kapak görseli" referrerpolicy="no-referrer">
+    <div>
+      <p id="title"></p>
+      <p id="meta"></p>
+      <div class="actions">
+        <button type="button" id="dl">MP4 olarak indir</button>
+        <button type="button" id="share" class="ghost" hidden>Galeriye kaydet</button>
+        <a id="fallback" class="btn" href="#" target="_blank" rel="noopener noreferrer" hidden>Videoyu yeni sekmede aç</a>
+      </div>
+    </div>
+  </section>
+
+
+  <p class="note">Yalnızca kendi videolarını veya sahibinin izin verdiği içerikleri indir. Başkasının videosunu izinsiz kullanmak telif hakkını ve TikTok kullanım koşullarını ihlal edebilir.</p>
+</main>
+
+<script>
+const TIKWM = "https://www.tikwm.com";
+const $ = s => document.querySelector(s);
+
+let current = null;
+let savedFile = null;
+
+function setStatus(text, isError) {
+  const el = $("#status");
+  el.textContent = text || "";
+  el.className = isError ? "err" : "";
+}
+function fmtDuration(s) {
+  if (!s) return "";
+  return Math.floor(s / 60) + ":" + String(Math.round(s % 60)).padStart(2, "0");
+}
+function absolute(u) {
+  return u && u.startsWith("/") ? TIKWM + u : u;
+}
+
+async function lookupTikwm(url) {
+  const r = await fetch(TIKWM + "/api/?hd=1&url=" + encodeURIComponent(url));
+  const d = await r.json();
+  if (d.code !== 0 || !d.data) {
+    const limited = /limit/i.test(d.msg || "");
+    throw new Error(limited ? "Çok hızlı istek attın. Bir saniye bekleyip tekrar dene." : (d.msg || "Video bulunamadı."));
+  }
+  const v = d.data;
+  if (Array.isArray(v.images) && v.images.length) {
+    throw new Error("Bu bir fotoğraf gönderisi, indirilebilir video yok.");
+  }
+  const videoUrl = absolute(v.hdplay || v.play);
+  if (!videoUrl) throw new Error("Bu gönderide indirilebilir video yok.");
+  return {
+    id: v.id || "video",
+    title: v.title,
+    uploader: v.author && (v.author.nickname || v.author.unique_id),
+    duration: v.duration,
+    thumbnail: absolute(v.cover),
+    quality: v.hdplay ? "HD" : "",
+    videoUrl
+  };
+}
+
+function resetResult() {
+  current = null;
+  savedFile = null;
+  $("#result").hidden = true;
+  $("#share").hidden = true;
+  $("#fallback").hidden = true;
+}
+
+$("#paste").addEventListener("click", async () => {
+  try {
+    $("#url").value = (await navigator.clipboard.readText()).trim();
+  } catch (e) {
+    setStatus("Panoya erişilemedi. Bağlantıyı alana elle yapıştır.", true);
+  }
+});
+
+$("#f").addEventListener("submit", async e => {
+  e.preventDefault();
+  const url = $("#url").value.trim();
+  if (!url) return;
+  const btn = $("#go");
+  btn.disabled = true;
+  resetResult();
+  setStatus("Video aranıyor…");
+  try {
+    current = await lookupTikwm(url);
+    $("#title").textContent = current.title || "TikTok videosu";
+    $("#meta").textContent = [current.uploader, fmtDuration(current.duration), current.quality].filter(Boolean).join(" · ");
+    $("#thumb").src = /^https?:\/\//.test(current.thumbnail || "") ? current.thumbnail : "";
+    $("#result").hidden = false;
+    setStatus("");
+  } catch (err) {
+    const offline = err instanceof TypeError;
+    setStatus(offline ? "Servise ulaşılamadı. İnternet bağlantını kontrol edip biraz sonra tekrar dene." : err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function saveFile(file) {
+  const u = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = u;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 60000);
+}
+
+$("#dl").addEventListener("click", async () => {
+  if (!current) return;
+  const btn = $("#dl");
+  btn.disabled = true;
+  $("#fallback").hidden = true;
+  setStatus("Video indiriliyor…");
+  try {
+    const r = await fetch(current.videoUrl);
+    if (!r.ok) throw new Error("http " + r.status);
+    const blob = await r.blob();
+    savedFile = new File([blob], "tiktok_" + current.id + ".mp4", { type: "video/mp4" });
+    saveFile(savedFile);
+    setStatus("İndirme tamamlandı. Video indirilenler klasöründe.");
+    if (navigator.canShare && navigator.canShare({ files: [savedFile] })) $("#share").hidden = false;
+  } catch (err) {
+    $("#fallback").href = current.videoUrl;
+    $("#fallback").hidden = false;
+    setStatus("Doğrudan indirilemedi. Videoyu yeni sekmede açıp tarayıcının kaydet seçeneğini kullan.", true);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+$("#share").addEventListener("click", async () => {
+  if (!savedFile) return;
+  try {
+    await navigator.share({ files: [savedFile] });
+  } catch (e) {
+    /* paylaşım penceresi kapatıldı */
+  }
+});
+</script>
+</body>
+</html>
